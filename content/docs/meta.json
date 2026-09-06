@@ -1,0 +1,22 @@
+{
+  "title": "文档",
+  "pages": [
+    "index",
+    "guide",
+    "reference",
+    "---交互式 API---",
+    "...system",
+    "...setup",
+    "...library",
+    "...studysets",
+    "...documents",
+    "...notes",
+    "...decks",
+    "...bundles",
+    "...snapshots",
+    "...search",
+    "...sync",
+    "...uistate",
+    "contract"
+  ]
+}

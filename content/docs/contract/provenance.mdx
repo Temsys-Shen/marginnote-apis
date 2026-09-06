@@ -1,0 +1,36 @@
+---
+title: 版本与来源
+description: 版本、来源链、保密与更新流程
+---
+
+## 版本
+
+- Bridge API：`0.49`（`apiFingerprint: d351b6bc763b`，`routeCount: 72`）
+- Guide/Skill：`0.49`（`guideHash: 0dbe99b42c32db98d0bafc526176cd722c084c5a50164d05b944c5c294a787ac`）
+- App：MarginNote 4（`appVersion: 4.5.0`）
+
+## 来源链（可复核）
+
+1. 一次性安装链接（用户提供，已用掉）：
+   - 首次 `?code=wWBrlzJEMMkZvNl7` → `403`（码无效/过期，仅 273B 提示脚本；headers 存档）
+   - 二次 `?code=N3wFj7QeAa3uEz_L` → `200`（109024B 安装脚本，内含 token + mn-bridge Skill v0.49 全文 + Skill 分发/MCP 接入逻辑）
+   - 存档：`raw/install_headers.txt` + `raw/install_body.sh`（二次成功，**含真实 token，未纳入 git**）；
+     另有首次 403 存档 `raw/install_headers_first_attempt_403.txt` + `raw/install_body_first_attempt_403.txt`（273B 提示脚本）
+2. 运行时快照（用安装 token 拉取）：
+   - `GET /status`（免鉴权 + 带鉴权各一次）→ `raw/status_auth.json`（`authorized:true`）
+   - `GET /capabilities` → `raw/capabilities.json`（72 路由 + 机器可读附录）
+   - `GET /guide` → `raw/guide.md`（运行时规程，与 Skill 体一致）
+3. 二进制交叉核对：`MarginNote 4.app` 内 `^/bridge/v1/...$` 正则路由（68 条 regex + 若干精确路径，合计 72），与 capabilities 一致；`GCDWebServer` 监听 `127.0.0.1:42340`。
+
+## 保密
+
+- `raw/` 内含真实 Bearer token（`.gitignore` 已排除 `install_body.sh`/`status_auth.json`/`capabilities.json`/`guide.md`）。**不要把 token 提交到公开仓库或发给他人。**
+- 本站所有示例用 `$TOKEN` / `mnb0.…` 占位，不含真实 token。
+- 轮换：重跑一次新的「Copy Agent Setup Command」即换 token，旧 token 失效。
+
+## 更新流程
+
+1. 重拉 `GET /status`，比对 `guideVersion`/`guideHash`/`apiFingerprint`
+2. 不一致 → 带现有 token 重拉 `GET /guide` + `GET /capabilities`
+3. `npm run openapi:build` 重生成 `openapi/openapi.yaml`
+4. 按 `routeCount` 差补参考页，`npm run docs:build` 验证

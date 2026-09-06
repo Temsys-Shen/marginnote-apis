@@ -1,0 +1,43 @@
+---
+title: OpenAPI 说明
+description: openapi.yaml 的生成、渲染与 Try-it 代理
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# OpenAPI 说明
+
+机器可读契约：仓库根 `openapi/openapi.yaml`（OpenAPI 3.1）。
+
+- 由 `raw/capabilities.json` 经 `scripts/build-openapi.py` 生成，含全部 **72 路由**（`method + path`）
+- 每个 operation 带 `x-requires-max` / `x-requires-confirm`（与总览表一致）
+- `GET /status` 标 `security: []`（免鉴权）；其余默认 `bearerAuth`
+- 通用 `401/403/422` 语义已写入每个 operation；`ApiError` schema 见 `components.schemas`
+- `x-bridge` 记录 `bridgeApiVersion/routeCount/apiFingerprint/guideVersion/guideHash/presets/anchorModes`
+
+## 本站如何渲染它
+
+本站用 `fumadocs-openapi` 把它变成**虚拟页面**（无需落盘 MDX）：
+
+- `lib/openapi.ts` 用 `createOpenAPI({ input: ['./openapi/openapi.yaml'] })` 加载；
+- `lib/source.ts` 用 `openapi.staticSource({ groupBy: 'tag' })` 按 Tag 生成 12 组页面，挂到侧边栏「交互式 API」分组；
+- `components/api-page.tsx` 用 `createOpenAPIPage()` 渲染：参数/请求体/响应 Schema、多语言代码示例、API Playground。
+
+## Try-it 真机调试
+
+<Callout type="warn">
+Bridge 见到 `Origin` 头直接 403，而浏览器跨域 fetch 一定带 Origin。
+本站 `POST /api/openapi-proxy` 在服务端转发请求（去掉 Origin），Playground 经它调用，本机直接试端点。
+目标仅允许 loopback（127.0.0.1 / localhost / ::1），并有 120s 超时（同步大包 prepare 阻塞可达数分钟）。
+</Callout>
+
+需要 Bearer 的端点先在 Playground 的 Authorization 面板填 token（`~/.config/mn-bridge/token` 的内容）。
+
+## 重新生成
+
+```bash
+python3 scripts/build-openapi.py
+```
+
+输入为 `raw/capabilities.json`，输出覆写 `openapi/openapi.yaml`。
+运行时升级后：重拉 `/capabilities` 快照 → 重跑脚本 → 重构建本站（`npm run build`），对照 `apiFingerprint`/`guideHash` 写 changelog。

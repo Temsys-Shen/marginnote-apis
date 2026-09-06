@@ -1,0 +1,70 @@
+---
+title: System / Setup
+description: 状态、能力清单、规程、上下文、安装与 MCP 通道
+---
+
+Base：`http://127.0.0.1:{port}/bridge/v1`。除 `GET /status` 外一律 Bearer；不带 Origin。
+
+## GET /status（免鉴权）
+
+```bash
+curl -s http://127.0.0.1:42340/bridge/v1/status
+```
+
+返回（含 0.34+ 字段）：`app/appVersion/bridgeApiVersion/routeCount/apiFingerprint/guideVersion/guideHash/enabled/authorized/instanceNonce/guide{...}`。
+
+- 判活只看它；带 token 时 `authorized:true` 才正常
+- `guide.route` 为 `/guide`；`refreshPolicy` 为版本/hash 不一致即刷新；`rotatesToken:false`
+
+## GET /capabilities（Bearer）
+
+```bash
+curl -s "$BASE/capabilities" -H "$AUTH"
+```
+
+返回：`routes[{method,path,requiresMax}]`（72 条）+ `accessPolicy/presets/anchorModes/bundlePrepare/bundleSubmit/noteMetadata/noteCopy/noteHashtags/reviewDeckCards/imageOcclusions/documentExport/mindMapPrint/legacySync/guide...`。
+
+- `accessPolicy`：`readOnlyRequiresMax:false`，`writeRequiresMax:true`，用户数据仍需 Bearer
+- `presets`：`book-breakdown/source-structure/exam-general/dictionary`
+- `anchorModes`：`page_text/block`
+
+机器可读附录见 [运行时能力](/docs/contract/capabilities)。
+
+## GET /guide（Bearer）
+
+运行时规程 Markdown（mn-bridge Skill v0.49）。开场对账：版本/hash 不一致即以它为准，只读刷新。
+
+## GET /context（Bearer，只读）
+
+用户说「这张卡」「这页」时先打它，别让用户口述 id。
+
+返回 `studySet/currentPage/documents[](focused+page)/selectedNotes[]/focusedNote/capturedAt/available/reason`。
+
+- `currentPage.page` 为 PDF 页序；blank 页已换算真实页，`surfacePage/blankPage`（如 66036）绝不传 PDF 接口；`mappingAvailable:false` 则问用户
+- `selectedNotes` 空正常；`focusedNote` 为焦点/缩放根 ≠ 选中卡
+- `studySet.isDeck:true` = 复习卡组（勿往里拆书）
+- `available:false` 按 `reason` 回退：`nothing_open` → 让用户选集；`app_not_responding` → 直接问用户；勿重试
+
+## GET /install?code=（一次性）
+
+```bash
+curl -sSL "http://127.0.0.1:42340/bridge/v1/install?code=xxx" | sh
+```
+
+code 10 分钟有效、只能用一次。成功返回安装脚本：写 `~/.config/mn-bridge/token`（600）、装 Skill 到各家 `skills/mn-bridge/SKILL.md`、提示可选 MCP 接入。失败返回过期提示脚本（403）。
+
+## POST /install/code（Bearer）
+
+能力清单中的安装辅助路由，语义以 `/guide` 为准。
+
+## POST /mcp（Bearer）
+
+MCP 通道。`GET /mcp` 未实现（501）属预期，以 POST 为准。
+
+```bash
+claude mcp add --transport http marginnote http://127.0.0.1:42340/bridge/v1/mcp \
+  --header "Authorization: Bearer mnb0.…"
+```
+
+工具：`mn_guide`（运行时规程） + `mn_call`（`{method,path,body}` 转发）。能力表达仍在规程里，MCP 只建连。
+图片经 `mn_call` 以 MCP `image` 内容返回，不当 UTF-8 解码。
