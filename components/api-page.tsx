@@ -2,16 +2,14 @@
 import { createOpenAPIPage } from 'fumadocs-openapi/ui';
 
 /**
- * OpenAPI 交互页面：请求/响应 Schema、curl/Python/JS 等多语言示例、
- * API Playground（Try-it）。Playground 经站内代理真实调用本机 Bridge，
- * 超时放宽到 120s（同步 prepare 大包阻塞可达数分钟）。
+ * OpenAPI 交互页面：请求/响应 Schema、多语言代码示例。
+ *
+ * 注意：Playground（Try-it）已关闭——它需要站内代理转发（去掉浏览器自带的
+ * Origin 头，否则 Bridge 直接 403），而纯静态托管没有服务端。
+ * 云上调试请用 curl（见各指南页示例）；本机有 Bridge 时可用 `next dev` 模式。
  */
 export const OpenAPIPage = createOpenAPIPage({
   playground: {
-    enabled: true,
-    fetchOptions: {
-      proxyUrl: '/api/openapi-proxy',
-      requestTimeout: 120,
-    },
+    enabled: false,
   },
 });

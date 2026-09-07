@@ -9,8 +9,6 @@
 /.next/
 /out/
 /build
-.open-next/
-.wrangler/
 *.tsbuildinfo
 
 # misc
@@ -35,3 +33,6 @@ raw/status_auth.json
 raw/capabilities.json
 raw/guide.md
 .mn-bridge-token
+# 本工程统一用 npm，忽略 pnpm 锁文件
+pnpm-lock.yaml
+pnpm-workspace.yaml

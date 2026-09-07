@@ -81,7 +81,8 @@ curl -s "$BASE/status"   # 有 NONCE 则校验 instanceNonce 一致
 后续请求一律带 `-H "Authorization: Bearer $MN_BRIDGE_TOKEN"`。
 
 <Callout type="error">
-**不要带 Origin 头**（带了 403 `FORBIDDEN_ORIGIN`）。这也是本站 API Playground 经站内代理转发的原因——代理在服务端去掉 Origin 后再转发给 Bridge。
+**不要带 Origin 头**（带了 403 `FORBIDDEN_ORIGIN`）。云上调试同样受此限制，
+见[接口总览](/docs/reference/overview)。
 </Callout>
 
 ## 开场对账（连上后第一件事）

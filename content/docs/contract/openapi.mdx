@@ -23,15 +23,12 @@ import { Callout } from 'fumadocs-ui/components/callout';
 - `lib/source.ts` 用 `openapi.staticSource({ groupBy: 'tag' })` 按 Tag 生成 12 组页面，挂到侧边栏「交互式 API」分组；
 - `components/api-page.tsx` 用 `createOpenAPIPage()` 渲染：参数/请求体/响应 Schema、多语言代码示例、API Playground。
 
-## Try-it 真机调试
+## Try-it 说明
 
 <Callout type="warn">
-Bridge 见到 `Origin` 头直接 403，而浏览器跨域 fetch 一定带 Origin。
-本站 `POST /api/openapi-proxy` 在服务端转发请求（去掉 Origin），Playground 经它调用，本机直接试端点。
-目标仅允许 loopback（127.0.0.1 / localhost / ::1），并有 120s 超时（同步大包 prepare 阻塞可达数分钟）。
+交互页的 Playground（Try-it）已关闭。浏览器跨域自带 Origin，而 Bridge 见 Origin 直接 403；
+纯静态托管没有服务端可以代为转发。云上调试请用 curl（见各指南页示例）。
 </Callout>
-
-需要 Bearer 的端点先在 Playground 的 Authorization 面板填 token（`~/.config/mn-bridge/token` 的内容）。
 
 ## 重新生成
 

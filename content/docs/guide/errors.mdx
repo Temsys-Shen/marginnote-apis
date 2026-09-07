@@ -24,7 +24,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 | 码 | code | 含义与动作 |
 |---|---|---|
 | 401 | `UNAUTHORIZED` | 令牌缺失/无效。重装换 token |
-| 403 | `FORBIDDEN_ORIGIN` | 带了 Origin 头。去掉重试（或走本站 Playground 代理） |
+| 403 | `FORBIDDEN_ORIGIN` | 带了 Origin 头。去掉重试 |
 | 403 | `MAX_REQUIRED` | 该写路由需 Max 而用户无订阅。该写不重试不绕路，只读继续 |
 | 422 | `CONFIRM_REQUIRED` | 缺 `confirm:true` 且未执行。其中六个重动词为**真 dry-run**（已跑完全部只读校验，`details` 可直接复述给用户）；其余端点仅门控，未做对象校验，用只读端点自核 |
 | 422 | `HASHTAG_ROUTE_REQUIRED` | 用 text 接口写标签。走 `POST /notes/hashtags`，`details` 有规范示例 |
