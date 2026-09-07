@@ -1,2 +1,3 @@
 # Pages 原生重定向（next.config 的 redirects() 与静态导出不兼容）
 /docs/api /docs/system/get-status 302
+/llms /llms.txt 302
