@@ -9,9 +9,14 @@
     "build": "next build",
     "start": "next start",
     "types:check": "tsc --noEmit",
-    "openapi:build": "python3 scripts/build-openapi.py"
+    "openapi:build": "python3 scripts/build-openapi.py && node scripts/yaml-to-json.mjs",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "fumadocs-core": "^16.15.0",
     "fumadocs-mdx": "^15.4.0",
     "fumadocs-openapi": "^11.4.0",
@@ -19,7 +24,8 @@
     "lucide-react": "^1.39.0",
     "next": "16.3.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -29,6 +35,7 @@
     "@types/react-dom": "^19.2.5",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.129.0"
   }
 }

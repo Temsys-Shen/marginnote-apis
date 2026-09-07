@@ -196,6 +196,22 @@ paths:
           description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
   /library/study-sets:
     get:
+      operationId: "get-library-study-sets"
+      summary: "列出学习集"
+      description: "返回学习集列表。不含复习卡组（卡组走 GET /decks）。支持 ?query= 过滤。"
+      tags:
+        - Library
+      x-requires-max: false
+      x-requires-confirm: false
+      responses:
+        '200':
+          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）
+        '401':
+          description: 令牌缺失/无效（UNAUTHORIZED）。TCP 通说明 Bridge 活着，换 token 重装。
+        '403':
+          description: FORBIDDEN_ORIGIN（带了 Origin 头，去掉重试）或 MAX_REQUIRED（需订阅，该写请求勿重试）或跨设备 APPROVAL_DENIED。
+        '422':
+          description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
     post:
       operationId: "post-library-study-sets"
       summary: "新建空学习集"
@@ -233,6 +249,22 @@ paths:
           description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
   /study-sets/{id}/documents:
     get:
+      operationId: "get-study-sets-id-documents"
+      summary: "列学习集文档"
+      description: "返回该集引用的文档（含 sourceState normal/missing_file、主文档信息）。"
+      tags:
+        - StudySets
+      x-requires-max: false
+      x-requires-confirm: false
+      responses:
+        '200':
+          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）
+        '401':
+          description: 令牌缺失/无效（UNAUTHORIZED）。TCP 通说明 Bridge 活着，换 token 重装。
+        '403':
+          description: FORBIDDEN_ORIGIN（带了 Origin 头，去掉重试）或 MAX_REQUIRED（需订阅，该写请求勿重试）或跨设备 APPROVAL_DENIED。
+        '422':
+          description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
     post:
       operationId: "post-study-sets-id-documents"
       summary: "给学习集加文档"
@@ -378,6 +410,22 @@ paths:
           description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
   /study-sets/{id}/snapshots:
     get:
+      operationId: "get-study-sets-id-snapshots"
+      summary: "列学习集快照"
+      description: "版本点列表。复用语义注意：内容无变化时复用既有版本点。"
+      tags:
+        - StudySets
+      x-requires-max: false
+      x-requires-confirm: false
+      responses:
+        '200':
+          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）
+        '401':
+          description: 令牌缺失/无效（UNAUTHORIZED）。TCP 通说明 Bridge 活着，换 token 重装。
+        '403':
+          description: FORBIDDEN_ORIGIN（带了 Origin 头，去掉重试）或 MAX_REQUIRED（需订阅，该写请求勿重试）或跨设备 APPROVAL_DENIED。
+        '422':
+          description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
     post:
       operationId: "post-study-sets-id-snapshots"
       summary: "打学习集快照"
@@ -919,6 +967,22 @@ paths:
           description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
   /decks:
     get:
+      operationId: "get-decks"
+      summary: "列复习卡组"
+      description: "返回 {deckId,title,cardCount,lastModifiedAt}。不列学习集（集走 library/study-sets），id 不通用。"
+      tags:
+        - Decks
+      x-requires-max: false
+      x-requires-confirm: false
+      responses:
+        '200':
+          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）
+        '401':
+          description: 令牌缺失/无效（UNAUTHORIZED）。TCP 通说明 Bridge 活着，换 token 重装。
+        '403':
+          description: FORBIDDEN_ORIGIN（带了 Origin 头，去掉重试）或 MAX_REQUIRED（需订阅，该写请求勿重试）或跨设备 APPROVAL_DENIED。
+        '422':
+          description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
     post:
       operationId: "post-decks"
       summary: "新建复习卡组"
@@ -938,6 +1002,22 @@ paths:
           description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
   /decks/{id}/cards:
     get:
+      operationId: "get-decks-id-cards"
+      summary: "列复习卡"
+      description: "返回 {cardNoteId,sourceNoteId,sourceAlive,title}。sourceAlive:false=原卡已删/隐藏，背面空白。"
+      tags:
+        - Decks
+      x-requires-max: false
+      x-requires-confirm: false
+      responses:
+        '200':
+          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）
+        '401':
+          description: 令牌缺失/无效（UNAUTHORIZED）。TCP 通说明 Bridge 活着，换 token 重装。
+        '403':
+          description: FORBIDDEN_ORIGIN（带了 Origin 头，去掉重试）或 MAX_REQUIRED（需订阅，该写请求勿重试）或跨设备 APPROVAL_DENIED。
+        '422':
+          description: 参数/前置校验失败，或 confirm 门（CONFIRM_REQUIRED；六个重动词为真 dry-run，details 含已验事实）。
     post:
       operationId: "post-decks-id-cards"
       summary: "加复习卡"
