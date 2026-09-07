@@ -35,11 +35,11 @@ MarginNote HTTP 接口文档站（本地 Agent Bridge，Bridge API v0.49 / App 4
 ## 快速开始
 
 ```bash
-npm install
-npm run dev     # 本地预览 http://localhost:3000
-npm run build   # 构建验证（纯静态导出到 out/）
-npm run start   # 运行构建产物
-npm run types:check
+pnpm install
+pnpm dev     # 本地预览 http://localhost:3000
+pnpm build   # 构建验证（纯静态导出到 out/）
+pnpm start   # 运行构建产物
+pnpm types:check
 ```
 
 ## 部署（Cloudflare Pages，免费无限量）
@@ -47,13 +47,13 @@ npm run types:check
 本站是纯静态导出，无需服务端：
 
 ```bash
-npm run deploy   # next build + wrangler pages deploy out --project-name=mnapis
+pnpm deploy   # next build + wrangler pages deploy out --project-name=mnapis
 ```
 
 或在 Cloudflare 面板接 GitHub 自动部署（Production branch `main`）：
 
 - **Root directory**：留空
-- **Build command**：`npm run build`
+- **Build command**：`pnpm build`
 - **Output directory**：`out`
 - **Environment variables**：`NODE_VERSION=22`
 
