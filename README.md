@@ -4,7 +4,7 @@ MarginNote HTTP 接口文档站（本地 Agent Bridge，Bridge API v0.49 / App 4
 
 - 版本：Bridge API **v0.49** / App 4.5.0 / Guide v0.49（72 路由）
 - Base URL：`http://127.0.0.1:{port}/bridge/v1`（端口现查，默认 42340 起扫 20 个）
-- 框架：**Fumadocs**（Next.js）+ **fumadocs-openapi**（OpenAPI 虚拟页面 + APIPage + Playground）
+- 框架：**Fumadocs**（Next.js）+ **fumadocs-openapi**（OpenAPI 虚拟页面 + APIPage）
 
 ## 目录
 
@@ -13,20 +13,22 @@ MarginNote HTTP 接口文档站（本地 Agent Bridge，Bridge API v0.49 / App 4
 ├── app/                   # Next.js 路由
 │   ├── page.tsx           # 落地页
 │   ├── docs/[[...slug]]/  # 文档页（手写 MDX + OpenAPI 虚拟页分支渲染）
-│   ├── api/search/        # 站内搜索
-│   ├── api/openapi-proxy/ # 站内代理：让 Playground 真机调用本机 Bridge
+│   ├── api/search/        # 站内搜索（构建时导出静态索引）
 │   └── llms.txt | llms-full.txt | llms.mdx/  # LLM 友好输出
 ├── components/
-│   ├── api-page.tsx       # createOpenAPIPage（Schema/示例/Playground）
+│   ├── api-page.tsx       # createOpenAPIPage（Schema/示例，Playground 已关闭）
+│   ├── search-dialog.tsx  # 静态搜索对话框（staticClient）
 │   └── mdx.tsx
 ├── content/docs/          # 手写文档（指南/参考/契约）+ meta.json 侧边栏
 ├── lib/
-│   ├── openapi.ts         # createOpenAPI（input: openapi.yaml）
+│   ├── openapi.ts         # createOpenAPI（静态 import openapi.json，函数式 input）
 │   └── source.ts          # loader（手写源 + staticSource groupBy tag）
 ├── openapi/
-│   └── openapi.yaml       # OpenAPI 3.1（由 scripts/build-openapi.py 生成）
+│   ├── openapi.yaml       # OpenAPI 3.1（由 scripts/build-openapi.py 生成）
+│   └── openapi.json       # 同上转 JSON（构建时静态 import，见 scripts/yaml-to-json.mjs）
 ├── scripts/
-│   └── build-openapi.py   # capabilities → openapi 生成器
+│   ├── build-openapi.py   # capabilities → openapi.yaml 生成器
+│   └── yaml-to-json.mjs   # openapi.yaml → openapi.json
 └── raw/                   # 原始响应存档（本地，不提交 token 相关文件）
 ```
 
@@ -79,7 +81,7 @@ curl -s http://127.0.0.1:42340/bridge/v1/capabilities -H "Authorization: Bearer 
 ## 阅读顺序
 
 1. `/docs` → 指南：连接鉴权 → 标准工作流 → 错误纪律
-2. 侧边栏「交互式 API」：12 组 67 页交互式参考（Schema + 示例 + Try-it）
+2. 侧边栏「交互式 API」：12 组 67 页交互式参考（Schema + 多语言示例）
 3. 契约：capabilities 附录、OpenAPI 说明、版本与来源
 
 权威顺序：**运行时 `/capabilities` ＞ 运行时 `GET /guide` ＞ 本站**。
