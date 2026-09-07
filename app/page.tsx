@@ -4,9 +4,9 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col justify-center px-4 py-16 text-center">
-      <h1 className="mb-4 text-4xl font-bold">MarginNote Agent Bridge HTTP API</h1>
+      <h1 className="mb-4 text-4xl font-bold">mnapis</h1>
       <p className="text-fd-muted-foreground mb-8">
-        MarginNote 4 本地 Bridge 完整接口文档 · Bridge API v0.49 · App 4.5.0 · 72 路由
+        MarginNote HTTP 接口文档 · Bridge API v0.49 · App 4.5.0 · 72 路由
       </p>
       <div className="mx-auto w-full max-w-3xl text-left">
         <Cards>

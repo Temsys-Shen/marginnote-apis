@@ -1,6 +1,6 @@
-# MarginNote Agent Bridge HTTP 接口文档
+# mnapis
 
-MarginNote 4 本地 Agent Bridge（loopback HTTP）的完整 HTTP 接口文档。
+MarginNote HTTP 接口文档站（本地 Agent Bridge，Bridge API v0.49 / App 4.5.0 / 72 路由）。
 
 - 版本：Bridge API **v0.49** / App 4.5.0 / Guide v0.49（72 路由）
 - Base URL：`http://127.0.0.1:{port}/bridge/v1`（端口现查，默认 42340 起扫 20 个）

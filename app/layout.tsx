@@ -3,8 +3,8 @@ import './global.css';
 
 export const metadata = {
   title: {
-    template: '%s | MarginNote Agent Bridge',
-    default: 'MarginNote Agent Bridge HTTP API',
+    template: '%s | mnapis',
+    default: 'mnapis',
   },
   description: 'MarginNote 4 本地 Agent Bridge 完整 HTTP 接口文档（Bridge API v0.49 / 72 路由）',
 };
