@@ -47,7 +47,7 @@ pnpm types:check
 本站是纯静态导出，无需服务端：
 
 ```bash
-pnpm deploy   # next build + wrangler pages deploy out --project-name=mnapis
+pnpm deploy:pages   # next build + wrangler pages deploy out --project-name=mnapis
 ```
 
 或在 Cloudflare 面板接 GitHub 自动部署（Production branch `main`）：
