@@ -3,67 +3,53 @@ title: Bundles（拆书）
 description: 拆书任务包：prepare、轮询、submit、回执对账、discard
 ---
 
+参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Bundles 分组）。本页只保留判据与陷阱。
+
 ## POST /bundles/prepare（免 Max，无 confirm 门）
 
-```bash
-curl -s -X POST "$BASE/bundles/prepare" -H "$AUTH" -H 'Content-Type: application/json' -d '{
-  "topicid":"…","bookmd5":"…",
-  "segments":[{"startPage":96,"endPage":132,"title":"第三章"}],
-  "preset":"book-breakdown","anchorMode":"page_text",
-  "title":"拆第三章，术语保留英文",
-  "cardStyle":{"defaultFillIndex":2},"async":true}'
-```
+> [交互式](/docs/bundles/post-bundles-prepare)
 
-- `segments`：PDF 页序，≤60 实际页（非跨度）；0.18+ 可非连续（题 3–6 + 解析 51–57 一次拿）；重叠乱序自动合并排序；更旧要求连续（422 `Segments must be contiguous`）
-- `preset`：`book-breakdown`（默认叙述体重组）/`source-structure`（忠实结构）/`exam-general`（按题成卡，须配 `block`）/`dictionary`（按原文规范名词成卡）；白名单外 422（`details` 列合法值）
-- `anchorMode`：文本干净散文 `page_text`；公式图密集/乱码/试卷/扫描迹象 `block`（`[block: b_页_序]`，公式不写 excerpt）；同书可按章混用；先 `pages[?blocks=1]` 探针实测
-- `cardStyle.defaultFillIndex` -1..2（不填色选 2；逐卡 `[style: colorIndex=11 fillIndex=2]`，`colorIndex` 0..15，先读 note-palette；`0` 非无填充）
-- 未知字段忽略（`ignoredFields` 明示；成功≠意图生效）
-- `async:true`（>~10 页必用；55 页 block 实测约 105s，curl/Agent 易超时）：即回 202 `{jobId,bundleId,bundlePath,state:preparing,pagesTotal}`；参数错同步 404/422；此时目录还在写，勿读
-- 单飞：一次一 prepare；429 `PREPARE_BUSY` 别再发（看 `runningJob/retryAfterSeconds`；刚 discard 重发亦然，等取消检查点）；同步小包（≤10 页）阻塞到完工（curl ≥300s），同样受单飞管辖；被并发 discard 则 409 `PREPARE_CANCELLED`
-- prepare 时少发 pages/toc-candidates（内存峰值叠加，保守）
-- 错配 0.18+ 回 `warnings`（如 exam-general 配 page_text）：停下改组合重 prepare（discard 旧包）
+- `segments`：PDF 页序，≤60 实际页（非跨度）；0.18+ 可非连续；重叠乱序自动合并排序；更旧要求连续。
+- `preset` 四选一（白名单外 422）；`anchorMode` 先 `pages[?blocks=1]` 探针实测再选；同书可按章混用。
+- `cardStyle.defaultFillIndex` -1..2（不填色选 2；逐卡 `[style:]`，`colorIndex` 先读 note-palette；`0` 非无填充）。
+- 未知字段忽略（`ignoredFields` 明示；成功≠意图生效）。
+- `async:true`（>~10 页必用）。此时目录还在写，勿读。参数错同步回 404/422。
+- 单飞：一次一 prepare；429 别再发（看 `runningJob/retryAfterSeconds`；刚 discard 重发亦然，等取消检查点）。同步小包同样受单飞管辖；被并发 discard 则 409。
+- prepare 时少发 pages/toc-candidates（内存峰值叠加，保守）。错配 0.18+ 回 `warnings`：停下改组合重 prepare。
 
 ## GET /bundles（免 Max）
 
-```bash
-curl -s "$BASE/bundles?origin=bridge" -H "$AUTH"
-```
+> [交互式](/docs/bundles/get-bundles)
 
-`?origin=bridge` 只看自建；`?since=` 按类型时间过滤（磁盘包按目录创建时间，作业按开始时间；长作业不因旧时间消失）。字段：`bundleId/jobId/bundlePath(同机拆书路径)/topicid/bookmd5/createdAt/state`；`version/rootNoteId` 仅 prepared|imported；`progress{pagesDone,pagesTotal}` 仅 preparing；`running` 仅作业；无 title/preset/origin。`state`：`preparing/prepared/imported/failed/cancelled`；`jobId` 非 null ≠ 本会话活作业（含重启残留）；`failed` 读 error（残留亦此，discard 清掉）。
-
-轮询约 15s：preparing 转述进度；prepared（OUTPUT-CONTRACT + skills 已写全）进拆书；failed 修后重来；放弃则 discard。
-
-落点：外部导出文件夹 `MindBooksBreakdown` 优先；未配置落沙盒容器（缺完全磁盘访问读不了，让用户选导出文件夹）。包内 `.bridge`（过滤标记）/`.imported`/`import-receipt.json` 勿动；`manifest.json`/`source.json` 为输入；结果写 `result.md`（markdown_outline，≤6 级）。
+- `?origin=bridge` 只看自建；`?since=` 按类型时间过滤（长作业不因旧时间消失）。`version/rootNoteId` 仅 prepared|imported；`progress` 仅 preparing；`running` 仅作业；无 title/preset/origin。
+- 轮询约 15s：preparing 转述进度；prepared 进拆书；failed 修后重来；放弃则 discard。
+- `jobId` 非 null ≠ 本会话活作业（含重启残留）。
+- 落点：外部导出文件夹优先；未配置落沙盒容器（缺完全磁盘访问读不了，让用户选导出文件夹）。包内 `.bridge`/`.imported`/`import-receipt.json` 勿动；结果写 `result.md`（markdown_outline，≤6 级）。
 
 ## GET /bundles/\{id\}/files（免 Max）
 
-列包文件；`?path=source.json` 取单文件原始内容（`curl -o` 落盘）。跨设备读包与交回靠它（对端 `bundlePath` 本机不可读）。
+> [交互式](/docs/bundles/get-bundles-id-files)
+
+- 列包文件；`?path=` 取单文件原始内容（`curl -o` 落盘）。跨设备读包与交回靠它。
 
 ## POST /bundles/\{id\}/submit（需 Max，无 confirm 门，发即 commit）
 
-```bash
-curl -s -X POST "$BASE/bundles/$B/submit" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"targetParentNoteId":"<可选>","withBlank":false,"excerptMode":"child"}'
-```
+> [交互式](/docs/bundles/post-bundles-id-submit) · [危险纪律](/docs/reference/dangerous-endpoints)
 
-- `targetParentNoteId` 可选（先 tree 选落点；不指定走默认）
-- `withBlank:true` 可选（每条成功摘录后插标准空留白并合并；`blankInsertion{requested,created,failed}`；内容后续 batch-get 找 `kind:blank` + `text` 接口写）
-- `excerptMode`：`child`（默认，每条 excerpt 成摘录子卡）/`link`（合并进卡本身）；整包粒度；`dictionary` 包与 `[block:]` 包恒合并（产品语义，不可覆盖；看 receipt 确认）
-- 跨设备另带 `resultMarkdown`（result.md 全文；服务端先落包再走同一导入路径）
-- 返回 `{rootNoteId,version,preImportSnapshotId,receipt[{noteid,title,parent,depth}],parsed{headings,importedCards,wikilinks,excerptsTotal,excerptsAnchored,failedExcerpts[]},warnings,excerptStatsTruncated?,blankInsertion?}`：
-  - `preImportSnapshotId` 存上下文（导错回退；`USER_EDITS_PRESENT` 时展示 `changedNodes` 获同意后 `force:true`）
-  - `headings≠importedCards` = 丢卡（receipt 与 result.md 差集）
-  - `excerptsTotal≠excerptsAnchored` = 未定位（`failedExcerpts[{noteid,excerpt,reason}]` 最多 50：`no_match/below_threshold` 多为改写原文，回 pages 核对重提；`missing_info/invalid_excerpt` 为摘录缺页码/空；`no_coordinates` 为扫描页无矩形，换 block 或接受无高亮）
-  - `excerptStatsTruncated:true` 则数不可作完整性依据
-  - `[[标题]]` 为合并卡（对方消失），非建链接；互指用纯文本或 `marginnote4app://note/{id}`（`dictionary` 包 `[[ ]]` 剥文本亦勿写）
-- 修订环：改同一 bundle result.md 重 submit = 整树替换；并发重发 409 `SUBMIT_IN_FLIGHT`（等 `retryAfterSeconds` 查 `/bundles`，多半已导完）
-- 提交前复述「哪章、多少卡、进哪个集」
+- 别拿它试参数，校验用 `GET /bundles`。提交前复述「哪章、多少卡、进哪个集」。
+- `withBlank` / `excerptMode` 整包粒度；`dictionary` 包与 `[block:]` 包恒合并（产品语义，不可覆盖；看 receipt 确认）。跨设备另带 `resultMarkdown`。
+- 回执必对：`preImportSnapshotId` 存上下文；`headings≠importedCards` = 丢卡；`excerptsTotal≠excerptsAnchored` = 未定位（看 `failedExcerpts`，多为改写原文或扫描页无矩形）；`excerptStatsTruncated:true` 则数不可作依据。
+- `[[标题]]` 为合并卡（对方消失），非建链接（`dictionary` 包剥文本亦勿写）。
+- 修订环：改同一 bundle result.md 重 submit = 整树替换；并发重发 409（等查 state，多半已导完）。
 
 ## POST /bundles/\{id\}/focus（免 Max，无门）
 
-聚焦结果。异步，事后 `/context` 对账。
+> [交互式](/docs/bundles/post-bundles-id-focus)
+
+- 聚焦结果。异步，事后 `/context` 对账。
 
 ## POST /bundles/\{id\}/discard（免 Max，无门，幂等）
 
-删磁盘工作目录（已导入卡片不受影响）。对 preparing = 取消（`cancelledJob` 非 null 为真取消）。放弃拆书或 submit 确认无误后顺手清。
+> [交互式](/docs/bundles/post-bundles-id-discard)
+
+- 删磁盘工作目录（已导入卡片不受影响）。对 preparing = 取消（`cancelledJob` 非 null 为真取消）。放弃拆书或 submit 确认无误后顺手清。

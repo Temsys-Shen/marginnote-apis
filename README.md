@@ -58,7 +58,8 @@ pnpm deploy:pages   # next build + wrangler pages deploy out --project-name=mnap
 - **Environment variables**：`NODE_VERSION=22`
 
 搜索是构建时导出的静态索引（`app/api/search` → `out/api/search`，客户端直读），
-Try-it 已关闭（纯静态无服务端转发 Origin，云上本来也连不到本机 Bridge）。
+Try-it 走 fumadocs 原生 Playground + 同源官方代理（`functions/api/bridge-proxy.ts`，
+去浏览器 Origin；`pnpm preview` 本机联调与云上部署可用）。
 
 连通性检查：
 

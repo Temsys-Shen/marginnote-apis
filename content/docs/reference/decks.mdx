@@ -3,44 +3,36 @@ title: Decks
 description: 复习卡组的创建、组卡管理与打开
 ---
 
-卡组技术上是 Topic（与学习集同构），界面语义独立（首页不同 tab、标签分家）。**两端点各管一种，id 不通用**（传错 422 `NOT_A_DECK`/404）。
+卡组技术上是 Topic（与学习集同构），界面语义独立（首页不同 tab、标签分家）。**两端点各管一种，id 不通用**（传错 422 `NOT_A_DECK`/404）。参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Decks 分组）。
 
 ## GET /decks（免 Max）
 
-```bash
-curl -s "$BASE/decks?query=" -H "$AUTH"
-```
+> [交互式](/docs/decks/get-decks)
 
-`{deckId,title,cardCount,lastModifiedAt}`。`cardCount` 仅复习卡本身（与库 `noteCount` 口径不同，对不上正常）。
+- `{deckId,title,cardCount,lastModifiedAt}`。`cardCount` 仅复习卡本身（与库 `noteCount` 口径不同，对不上正常）。
 
 ## POST /decks（需 Max + confirm）
 
-```bash
-curl -s -X POST "$BASE/decks" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"title":"生化复习","confirm":true}'
-```
+> [交互式](/docs/decks/post-decks)
 
-回 `{deckId,isDeck}`，**须校验 `isDeck:true`**。
+- 回 `{deckId,isDeck}`，**须校验 `isDeck:true`**。
 
 ## GET /decks/\{id\}/cards（免 Max）
 
-`{cardNoteId,sourceNoteId,sourceAlive,title}`。`sourceAlive:false` = 原卡已删/隐藏（卡在，背面空白，如实告知）。
+> [交互式](/docs/decks/get-decks-id-cards)
+
+- `sourceAlive:false` = 原卡已删/隐藏（卡在，背面空白，如实告知）。
 
 ## POST /decks/\{id\}/cards（需 Max + confirm，≤50/次）
 
-```bash
-curl -s -X POST "$BASE/decks/$DECK/cards" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"cards":[{"sourceNoteId":"…","question":"光合作用发生在{{叶绿体}}中"}],"confirm":true}'
-```
+> [交互式](/docs/decks/post-decks-id-cards)
 
-一张复习卡 = 正面 + 背面（`sourceNoteId` 原卡，不复制；必填，否则背面空白）。正面三选一互斥：
-
-- `questionContentId`（0.46+）：`batch-get` 某 `parts[].contentId` 精确作正面（dry-run 回显 `questionPart{kind,partIndex,questionIndex,hasImageOcclusions}`；图片挖空走此，勿自传内部 `questionIndex`）
-- `question`：自定义正面，挖空写 `{{词}}`（可改写换题型，不受原卡结构限）
-- 都不给：`autoQuestionIndex` 默认出题（复合卡勿依赖自动，先 batch-get 再明确传）
-
-`question` 与 `questionContentId` 同传拒收。幂等：同源卡重复加为更新并重排到期（`updatedExisting:true`）；跨组各建。组员 id 归一宿主（以 `resolvedNoteId` 为准）。删单卡用 `POST /notes/delete`（单向联动：删复习卡不影响源卡；删源卡级联删复习卡；dry-run `cascadeDeleted` 常为 1，系问题子卡，正常）。删整组用 `POST /study-sets/{deckId}/delete`（`keepHighlights:false` 才真干净）。
+- 一张复习卡 = 正面 + 背面（`sourceNoteId` 原卡，不复制；必填，否则背面空白）。正面三选一互斥：`questionContentId`（精确选 parts 内容，图片挖空走此，勿自传内部 index）/ `question`（自定义，`{{挖空}}`）/ 都不给（自动出题，复合卡勿依赖）。
+- 幂等：同源卡重复加为更新并重排到期；跨组各建。组员 id 归一宿主（以 `resolvedNoteId` 为准）。
+- 删单卡用 `POST /notes/delete`（单向联动：删复习卡不影响源卡；删源卡级联删复习卡）。删整组用 `POST /study-sets/{deckId}/delete`（`keepHighlights:false` 才真干净）。
 
 ## POST /decks/\{id\}/open（免 Max，无 confirm）
 
-打开卡组。异步，事后 `/context` 对账。抢屏，仅用户要求时用。
+> [交互式](/docs/decks/post-decks-id-open)
+
+- 打开卡组。异步，事后 `/context` 对账。抢屏，仅用户要求时用。

@@ -12,4 +12,8 @@ import spec from '../openapi/openapi.json';
  */
 export const openapi = createOpenAPI({
   input: { bridge: () => spec as unknown as Document },
+  // Playground 发送走同源官方代理（去浏览器 Origin，防 Bridge 403）。
+  // 代理是 Cloudflare Pages Function（functions/api/bridge-proxy.ts，
+  // 随 out/ 一起部署）：`pnpm preview` 本机联调与云上部署可用，`pnpm dev` 无此路由。
+  proxyUrl: '/api/bridge-proxy',
 });

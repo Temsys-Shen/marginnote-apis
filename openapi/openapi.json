@@ -132,6 +132,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "一次性安装码，10 分钟有效、只能用一次"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -158,6 +169,16 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "安装辅助路由，具体语义以运行时 GET /guide 为准；不轮换 token。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -178,12 +199,22 @@
       "post": {
         "operationId": "post-mcp",
         "summary": "MCP 通道",
-        "description": "MCP 客户端接入点：claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp --header \"Authorization: Bearer <token>\"。工具仅 mn_guide（规程）与 mn_call（{method,path,body} 转发）。GET /mcp 未实现（501），以 POST 通道为准。",
+        "description": "MCP 客户端接入点：claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp --header \"Authorization: Bearer $TOKEN\"。工具仅 mn_guide（规程）与 mn_call（{method,path,body} 转发）。GET /mcp 未实现（501），以 POST 通道为准。",
         "tags": [
           "Setup"
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "MCP JSON-RPC 通道，工具仅 mn_guide 与 mn_call（{method,path,body} 转发到同一批端点）。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -210,6 +241,56 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "纯文件名，决定 MN 内名字；同名不覆盖"
+          },
+          {
+            "name": "folder",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档根相对路径；不传落到用户上次浏览文件夹"
+          },
+          {
+            "name": "topicid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "顺手绑定的学习集，以 addedToStudySet 为准"
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "=1 确认写入（文件确认前已传完，直接带最省流量）"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "文件原始字节；参数走 query（filename/folder/topicid/confirm）"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -236,6 +317,35 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认删除；仅干净撤销（无锚定卡片）才执行"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -262,6 +372,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档根相对路径，空字符串为根"
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "列举深度"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -288,6 +418,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "按标题过滤学习集"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -312,6 +453,29 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "confirm"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "新学习集标题，调用前告知用户"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认建集"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -338,6 +502,48 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid（卡组删除走同一端点时为 deckId）"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "expectedTitle",
+                  "confirm"
+                ],
+                "properties": {
+                  "expectedTitle": {
+                    "type": "string",
+                    "description": "须与库中现值完全一致，否则 409 TITLE_MISMATCH"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认删除（最重写动词）"
+                  },
+                  "keepHighlights": {
+                    "type": "boolean",
+                    "description": "默认 true（隐藏卡+保留划线）；false 才真删干净"
+                  },
+                  "keepSnapshotHistory": {
+                    "type": "boolean",
+                    "description": "默认 true（自动打快照）；false 连快照历史一起清"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -364,6 +570,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -388,6 +605,40 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bookmd5",
+                  "confirm"
+                ],
+                "properties": {
+                  "bookmd5": {
+                    "type": "string",
+                    "description": "已在资料库的文档"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认加入"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -414,6 +665,35 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid（两处 id 含义不同，见名）"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "先不带打一次看 notesLosingSource，告知用户后再带"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -440,6 +720,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -466,6 +757,37 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "plan": {
+                    "type": "object",
+                    "description": "preview 返回并保存的完整计划（含 pages/visibleDepth/visibleNoteIds）"
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "description": "可选输出文件名"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -492,6 +814,48 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "keepStructure",
+                      "classic",
+                      "cardFlow"
+                    ],
+                    "description": "keepStructure|classic|cardFlow"
+                  },
+                  "densityValue": {
+                    "type": "number",
+                    "description": "0..1，classic 兼容值 0.995"
+                  },
+                  "rootNoteId": {
+                    "type": "string",
+                    "description": "可选分支根卡，只打该分支"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -518,6 +882,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -544,6 +919,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -570,6 +956,33 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "bookmd5": {
+                    "type": "string",
+                    "description": "可选，不给即主文档；须本机有文件"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -596,6 +1009,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -620,6 +1044,33 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "版本点说明，不加 Agent: 前缀"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -646,6 +1097,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -672,6 +1134,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "学习集 topicid"
+          },
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "子脑图根卡 noteid，只读该张子脑图"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -698,6 +1180,46 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "topicid"
+                ],
+                "properties": {
+                  "topicid": {
+                    "type": "string",
+                    "description": "必填，定标注层"
+                  },
+                  "selectedPageNos": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "真实 PDF 页数组；省略=全书；空数组被拒；勿传留白虚拟页"
+                  },
+                  "includeRelatedBlankPages": {
+                    "type": "boolean",
+                    "description": "默认 true，留白由 native 隐式带上"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -724,6 +1246,44 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "page"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "逐字照抄的原文"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "必填，PDF 页序"
+                  },
+                  "navigate": {
+                    "type": "boolean",
+                    "description": "true 仅滚动不高亮；跨文档不跳"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -750,6 +1310,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -776,6 +1347,44 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "起始 PDF 页（第一页=1）"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "结束 PDF 页，单次 ≤60 页"
+          },
+          {
+            "name": "blocks",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "=1 变块探针，返回块清单（较慢，探 1-2 页）"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -802,6 +1411,44 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "PDF 页序"
+          },
+          {
+            "name": "maxEdge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "最长边 64–4096，默认按 parts 取图即可"
+          },
+          {
+            "name": "studySet",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "旧 blank map 解析优先级"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -828,6 +1475,35 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "PDF 页序（第一页=1，勿传留白虚拟页号）"
+          },
+          {
+            "name": "studySet",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "仅调旧 blank map 解析优先级，仍合并全部 topic"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -854,6 +1530,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          },
+          {
+            "name": "verifyHash",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "=1 计算内容 hash（全文件扫描，大 PDF 慢）"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -880,6 +1576,50 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "目录条目 [{title,page,level(0-7),anchor?}]，页码须递增"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认写入（多集可见，快照救不了）"
+                  },
+                  "useOriginal": {
+                    "type": "boolean",
+                    "description": "true=切回原始目录（唯一回退口）"
+                  },
+                  "useAI": {
+                    "type": "boolean",
+                    "description": "true=切回 AI 目录"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -906,6 +1646,35 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "文档 bookmd5"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "起始页"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "结束页，单次 ≤60 页硬上限"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -932,6 +1701,27 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "noteIds"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "卡片 id 数组，≤200/次"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -958,6 +1748,50 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "所选根卡（简单形态），≤50 根"
+                  },
+                  "targetParentNoteId": {
+                    "type": "string",
+                    "description": "目标父卡（简单形态，须已存在普通脑图卡）"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "reference",
+                      "clone"
+                    ],
+                    "description": "reference（同步）|clone（独立）"
+                  },
+                  "copies": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "批量形态 [{noteIds,targetParentNoteId,mode}]"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "先展示源卡/模式→目标分组获同意"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -984,6 +1818,32 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "noteIds",
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "≤50，同集；只删点名卡"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "展示标题+子卡去向获同意；先打快照"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1010,6 +1870,37 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "noteIds",
+                  "folded",
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "≤200"
+                  },
+                  "folded": {
+                    "type": "boolean",
+                    "description": "true 折叠 / false 展开"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1036,6 +1927,54 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "noteIds",
+                  "operation",
+                  "hashtags",
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "≤200"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "add",
+                      "remove",
+                      "replace"
+                    ],
+                    "description": "add|remove|replace"
+                  },
+                  "hashtags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "完整叶路径数组；replace 空数组=清空（须同意）"
+                  },
+                  "includeDescendants": {
+                    "type": "boolean",
+                    "description": "仅 remove 有效，连同子标签一起删"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认写入"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1062,6 +2001,37 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "noteIds",
+                  "patch",
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "≤200"
+                  },
+                  "patch": {
+                    "type": "object",
+                    "description": "{colorIndex 0..15?, fillIndex -1..2?}，选色前读 note-palette"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认修改"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1088,6 +2058,42 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "noteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "待移卡片（简单形态）"
+                  },
+                  "targetParentNoteId": {
+                    "type": "string",
+                    "description": "目标父卡（简单形态）"
+                  },
+                  "moves": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "批量形态 [{noteIds,targetParentNoteId}]，合计 ≤50/次"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "调用前展示逐卡方案获同意"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1114,6 +2120,40 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "confirm"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "评论内容；整条 note URL 成真双链"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认追加"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1140,6 +2180,53 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论序号 1..N（0 为卡正文，传 0 会 422）"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "confirm"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "新评论内容"
+                  },
+                  "expectedPrefix": {
+                    "type": "string",
+                    "description": "当前评论前 32 字"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认改写"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1166,6 +2253,48 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "评论序号 1..N"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "expectedPrefix": {
+                    "type": "string",
+                    "description": "当前评论前 32 字"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认删除"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1192,6 +2321,39 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          },
+          {
+            "name": "maxEdge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "最长边 64–4096，默认 2048"
+          },
+          {
+            "name": "layers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "composite",
+                "base"
+              ]
+            },
+            "description": "composite（默认）|base（0.42 起，省旧 mask 位图）"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1218,6 +2380,33 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "topicid": {
+                    "type": "string",
+                    "description": "多集引用同一卡时指定在哪个集里打开"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1244,6 +2433,39 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认折叠/展回"
+                  },
+                  "undo": {
+                    "type": "boolean",
+                    "description": "true 展回普通分支"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1270,6 +2492,63 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "图片/PDF 摘录笔记 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "masks",
+                  "expectedSourceFingerprint"
+                ],
+                "properties": {
+                  "coordinateSpace": {
+                    "type": "string",
+                    "description": "固定 normalized（左上角归一化）"
+                  },
+                  "operation": {
+                    "type": "string",
+                    "enum": [
+                      "add",
+                      "replace"
+                    ],
+                    "description": "add|replace"
+                  },
+                  "masks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "1..200 [{rect:{x,y,w,h},group?,flags?,isText?}]"
+                  },
+                  "expectedSourceFingerprint": {
+                    "type": "string",
+                    "description": "dry-run 与确认都必带"
+                  },
+                  "expectedMaskFingerprint": {
+                    "type": "string",
+                    "description": "确认写入必带（dry-run 返回）"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认写入；不带为真 dry-run"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1296,6 +2575,39 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "先把 willMerge[] 念给用户听再带"
+                  },
+                  "recursive": {
+                    "type": "boolean",
+                    "description": "true 合整棵子树，默认只合直接子卡"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1322,6 +2634,39 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "png",
+                "pdf"
+              ]
+            },
+            "description": "png|pdf"
+          },
+          {
+            "name": "width",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "320–1200"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1348,6 +2693,48 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "confirm"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "新正文；摘录卡改文须先告知脱钩后果"
+                  },
+                  "expectedPrefix": {
+                    "type": "string",
+                    "description": "当前值前 32 字，为空传 \"\""
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认修改"
+                  },
+                  "markdown": {
+                    "type": "boolean",
+                    "description": "是否按 Markdown 解析"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1374,6 +2761,48 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "卡片 noteid"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text",
+                  "confirm"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "新标题"
+                  },
+                  "expectedPrefix": {
+                    "type": "string",
+                    "description": "当前值前 32 字，为空传 \"\""
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "展示原文→改后获同意"
+                  },
+                  "markdown": {
+                    "type": "boolean",
+                    "description": "标题是否按 Markdown 解析"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1400,6 +2829,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "按标题过滤复习卡组"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1424,6 +2864,29 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "confirm"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "新卡组标题"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认新建；校验 isDeck:true"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1450,6 +2913,17 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "复习卡组 deckId（与 topicid 不通用）"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1474,6 +2948,43 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "复习卡组 deckId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cards",
+                  "confirm"
+                ],
+                "properties": {
+                  "cards": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "≤50 [{sourceNoteId(必填), question?, questionContentId?, title?}]，question 与 questionContentId 互斥"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "确认加入"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1500,6 +3011,27 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "复习卡组 deckId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "打开复习卡组（空 body 即可）；id 与学习集不通用。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1526,6 +3058,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "=bridge 只看自建任务包"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "按时间过滤（磁盘包按目录创建时间，作业按开始时间）"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1552,6 +3104,67 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "topicid",
+                  "bookmd5",
+                  "segments"
+                ],
+                "properties": {
+                  "topicid": {
+                    "type": "string",
+                    "description": "目标学习集"
+                  },
+                  "bookmd5": {
+                    "type": "string",
+                    "description": "源文档"
+                  },
+                  "segments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "description": "[{startPage,endPage,title}] PDF 页序；可非连续；实际页数 ≤60"
+                  },
+                  "preset": {
+                    "type": "string",
+                    "enum": [
+                      "book-breakdown",
+                      "source-structure",
+                      "exam-general",
+                      "dictionary"
+                    ],
+                    "description": "book-breakdown|source-structure|exam-general|dictionary"
+                  },
+                  "anchorMode": {
+                    "type": "string",
+                    "enum": [
+                      "page_text",
+                      "block"
+                    ],
+                    "description": "page_text|block"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "任务说明"
+                  },
+                  "cardStyle": {
+                    "type": "object",
+                    "description": "{defaultFillIndex -1..2}"
+                  },
+                  "async": {
+                    "type": "boolean",
+                    "description": ">~10 页必 true，走作业模式"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1578,6 +3191,27 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务包 bundleId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "删包/取消作业（空 body 即可）；幂等，已导入卡片不受影响。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1604,6 +3238,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务包 bundleId"
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "包内文件路径，如 source.json；不传列文件清单"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1630,6 +3284,27 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务包 bundleId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "聚焦导入结果（空 body 即可）；异步，事后 /context 对账。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1656,6 +3331,49 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务包 bundleId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "targetParentNoteId": {
+                    "type": "string",
+                    "description": "可选落点父卡，先 tree 选好"
+                  },
+                  "withBlank": {
+                    "type": "boolean",
+                    "description": "每条成功摘录后插标准空留白"
+                  },
+                  "excerptMode": {
+                    "type": "string",
+                    "enum": [
+                      "child",
+                      "link"
+                    ],
+                    "description": "child（默认）|link"
+                  },
+                  "resultMarkdown": {
+                    "type": "string",
+                    "description": "仅跨设备：result.md 全文内联交回"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1682,6 +3400,39 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "快照 id（打点/导入/删除响应里的 snapshotId）"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "展示版本时间/说明获同意；不带为真 dry-run"
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "description": "USER_EDITS_PRESENT 且用户确认覆盖才带"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1708,6 +3459,32 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "关键词；truncated:true 时加词缩小范围重搜"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "notes",
+                "studysets",
+                "documents"
+              ]
+            },
+            "description": "all|notes|studysets|documents"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1734,6 +3511,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "parameters": [
+          {
+            "name": "afterSequence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "从该 sequence 之后取"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "1..200，默认 50"
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1760,6 +3557,16 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "只读盘点触发端（空 body 即可）；observe-only，不上传/删。"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1786,6 +3593,26 @@
         ],
         "x-requires-max": false,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": null,
+                "properties": {
+                  "database": {
+                    "type": "boolean",
+                    "description": "默认 true，核对 CloudKit 数据库通道"
+                  },
+                  "documents": {
+                    "type": "boolean",
+                    "description": "默认 true，核对文档通道"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1864,6 +3691,24 @@
         ],
         "x-requires-max": true,
         "x-requires-confirm": false,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "state"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "object",
+                    "description": "差量补丁；缺键保持现状"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"

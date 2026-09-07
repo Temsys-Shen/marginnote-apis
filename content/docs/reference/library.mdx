@@ -3,51 +3,39 @@ title: Library
 description: 学习集的新建与列出、文档上传删除、文件夹
 ---
 
+参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Library 分组）。本页只保留判据与陷阱。
+
 ## GET /library/study-sets（免 Max）
 
-```bash
-curl -s "$BASE/library/study-sets?query=高数" -H "$AUTH"
-```
+> [交互式](/docs/library/get-library-study-sets)
 
-列学习集。不含复习卡组（走 `GET /decks`），id 不通用。
+- 列学习集。不含复习卡组（走 `GET /decks`），id 不通用。
 
 ## POST /library/study-sets（需 Max + confirm）
 
-```bash
-curl -s -X POST "$BASE/library/study-sets" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"title":"新学习集","confirm":true}'
-```
+> [交互式](/docs/library/post-library-study-sets)
 
-建空集（无文档 + 一张同名根卡）。返回 `{topicid, isStudySet}`，**须校验 `isStudySet:true`**。调用前告知用户。
+- 建空集（无文档 + 一张同名根卡）。返回 `{topicid, isStudySet}`，**须校验 `isStudySet:true`**。调用前告知用户。
 
 ## POST /library/documents/upload（需 Max，query confirm）
 
-body 为文件原始字节，参数走 query：
+> [交互式](/docs/library/post-library-documents-upload)
 
-```bash
-curl -X POST "$BASE/library/documents/upload?filename=book.pdf&folder=AI&topicid=$SS&confirm=1" \
-  -H "$AUTH" --data-binary @/path/to/book.pdf
-```
-
-- `filename` 必填（纯文件名，禁 `/`/`..`/首`.`；决定 MN 内名字，勿用临时名）
-- `folder` 强烈建议传（文档根相对路径；不传落到用户上次浏览文件夹，不可预测；先 `GET /library/folders` 看）
-- `topicid` 可选（顺手绑集；以 `addedToStudySet` 为准，`false` 时按 `warnings` 补 `POST /study-sets/{id}/documents` 并回读确认）
-- `confirm=1` 必填（确认前已传完，不带先探=白传一遍；直接带最省）
-- 同名不覆盖（`movedToFolder:false`）；`warnings` 含 MN 自动打标签行为；沙盒应用无按路径导入，字节必传；无删库端点之外的后悔（删见下条），传前复述文件名大小
+- body 为文件原始字节，参数走 query（`filename` 必填 + `folder/topicid` 可选 + `confirm=1` 必填）。
+- `filename` 纯文件名，决定 MN 内名字，勿用临时名；同名不覆盖。
+- `folder` 强烈建议传（不传落到用户上次浏览文件夹，不可预测；先 `GET /library/folders` 看）。
+- `topicid` 顺手绑集以 `addedToStudySet` 为准，`false` 时按 `warnings` 补加集并回读确认。
+- 确认前已传完一遍：不带先探=白传，直接带 `confirm=1` 最省。沙盒应用无按路径导入，字节必传。传前复述文件名大小（删见下条，无回收站）。
 
 ## POST /library/documents/\{bookmd5\}/delete（需 Max + confirm）
 
-干净撤销专用：仅无卡片锚定该书时执行。
+> [交互式](/docs/library/post-library-documents-id-delete)
 
-- 已拆/划线 → 409 `DOCUMENT_IN_USE`（有卡数；删会永久抹回源锚，重导不救；转用户去 MN 决定）
-- 虚拟文档拒删（`VIRTUAL_DOCUMENT_NOT_DELETABLE`，同步会拉回）
-- 无回收站；删完回读自证，`partial:true` 即半删（多为记录无、文件在），按 warning 告知
-- 导入时自动建的空文档笔记本会留下（`note` 说明）
+- 干净撤销专用：仅无卡片锚定该书时执行。已拆/划线 → 409（删会永久抹回源锚，重导不救；转用户去 MN 决定）。
+- 虚拟文档拒删（同步会拉回）。无回收站；删完回读自证，`partial:true` 即半删。导入时自动建的空文档笔记本会留下。
 
 ## GET /library/folders（免 Max）
 
-```bash
-curl -s "$BASE/library/folders?path=&depth=" -H "$AUTH"
-```
+> [交互式](/docs/library/get-library-folders)
 
-`""` 为根，`/` 分层。文件夹与学习集/标签互不影响，挪文件夹不坏卡片。
+- `""` 为根，`/` 分层。文件夹与学习集/标签互不影响，挪文件夹不坏卡片。

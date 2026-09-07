@@ -3,53 +3,55 @@ title: Search / Snapshots / Sync / UI
 description: 全库搜索、快照回退、旧同步诊断、界面状态
 ---
 
+参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Search / Snapshots / Sync / UIState 分组）。本页只保留判据与陷阱。
+
 ## GET /search（免 Max）
 
-```bash
-curl -s "$BASE/search?q=关键词&scope=documents" -H "$AUTH"
-```
+> [交互式](/docs/search/get-search)
 
-`scope=all|notes|studysets|documents`。找书唯一路：`scope=documents` 拿 `bookmd5`（书不在任何集里亦可搜到；无列全库文档端点）。回 `scanned/truncated`：`truncated:true` = 窗口没够到，加词重搜，勿断言无此书。新卡约 10s 索引延迟（刚 submit 搜不到自己正常）。
+- 找书唯一路：`scope=documents` 拿 `bookmd5`（书不在任何集里亦可搜到；无列全库文档端点）。
+- `truncated:true` = 窗口没够到，加词重搜，勿断言无此书。新卡约 10s 索引延迟（刚 submit 搜不到自己正常）。
 
 ## POST /snapshots/\{id\}/restore（需 Max + confirm，真 dry-run）
 
-```bash
-curl -s -X POST "$BASE/snapshots/$SID/restore" -H "$AUTH" \
-  -H 'Content-Type: application/json' -d '{"confirm":true}'
-```
+> [交互式](/docs/snapshots/post-snapshots-id-restore) · [危险纪律](/docs/reference/dangerous-endpoints)
 
-整集回过去（最重）。须展示版本（时间/说明）获同意。自动先打回退前保护点（`protectionSnapshotId`，一并告知）。目标集正开着 409 `STUDY_SET_IN_USE`（切走再试）。文档目录不在覆盖范围。不带 confirm 回 422 + `wouldRestoreToVersion/snapshotCreatedAt/snapshotDescription/noteCountInSnapshot`。`USER_EDITS_PRESENT` 时展示 `changedNodes` 获同意后 `force:true`。
+- 整集回过去（最重）。须展示版本（时间/说明）获同意。自动先打回退前保护点（一并告知）。
+- 目标集正开着 409（切走再试）。文档目录不在覆盖范围。不带 confirm 回 422 预览。`USER_EDITS_PRESENT` 时展示 `changedNodes` 获同意后 `force:true`。
 
 ## 旧同步诊断（旧 CloudKit + iCloud Documents，两通道独立）
 
-CloudKit 携结构/脑图/目录配置/折叠布局/留白/摘录/手写；iCloud Documents 携原文档字节。任一完成≠另一完成。五个端点免 Max、需 Bearer。
+任一完成≠另一完成。五个端点免 Max、需 Bearer。
 
 ### GET /sync/legacy/status
 
-隐私白名单快照（无正文/文档名/账号/record id）：`cloudKit/documents/diagnostic`。`errorCount` 为历史数；`suspended` 看 `suspensionNeedsAttention`（false 可为正常增量暂停）；当前周期错误看 `suspensionErrorCount`。
+> [交互式](/docs/sync/get-sync-legacy-status)
+
+- 隐私白名单快照（无正文/文档名/账号/record id）。`errorCount` 为历史数；`suspended` 看 `suspensionNeedsAttention`（false 可为正常增量暂停）；当前周期错误看 `suspensionErrorCount`。
 
 ### GET /sync/legacy/events
 
-`?afterSequence=N&limit=50`（1..200）。用 `lastSequence` 续取；`hasMore` 续取；`historyTruncated:true`（N 早于窗口/窗口损坏缺口，勿称中间完整）；尾部无事件时 `cursorAdvancedPastGap:true`（防死循环）；`cursorAhead:true`（换 channel/设备，重置游标）。双设备各用独立 base+token+nonce，sequence 不交叉。
+> [交互式](/docs/sync/get-sync-legacy-events)
+
+- 用 `lastSequence` 续取；`hasMore` 续取；`historyTruncated:true` 勿称中间完整；尾部无事件时 `cursorAdvancedPastGap:true` 防死循环；`cursorAhead:true` 重置游标。双设备各用独立 base+token+nonce，sequence 不交叉。
 
 ### POST /sync/legacy/recheck
 
-`{database?=true,documents?=true}`。复用 `checkSync + PopulateShelf`，不 reset/删/覆盖/改冲突；但可能应用待处理远端变更。`accepted` 仅受理，记 `operationId/startSequence` 后读 events/status。
+> [交互式](/docs/sync/post-sync-legacy-recheck)
+
+- 复用既有核对，不 reset/删/覆盖/改冲突；但可能应用待处理远端变更。`accepted` 仅受理，记 `operationId/startSequence` 后读 events/status。
 
 ### POST /sync/legacy/inventory
 
-只读分页观察 private zone 顶层存在性。Query 最终一致 + 非快照，非权威（`observed` 仅本轮未见 L-S；`possible_mismatch` 须按 record ID 核验；不自动修/传/删）。仅 Bridge 启用时显式触发；独立低优先级非蜂窝队列；不进 `isSyncing`/完成文案/UI；关 Bridge 即关。回执须明示 observeOnly/不改队列/不用蜂窝；仍耗配额。
+> [交互式](/docs/sync/post-sync-legacy-inventory)
 
-脚本：`tools/mn_legacy_sync_lab.py` + `doc/agent/mn_legacy_sync_lab.md`（见规程包）。
+- 只读分页观察，非权威（`observed` 仅本轮未见；`possible_mismatch` 须按 record ID 核验；不自动修/传/删）。仅 Bridge 启用时显式触发；独立低优先级非蜂窝队列；关 Bridge 即关。回执须明示 observeOnly；仍耗配额。
+- 脚本：`tools/mn_legacy_sync_lab.py` + `doc/agent/mn_legacy_sync_lab.md`（见规程包）。
 
 ## GET /ui-state（免 Max）／POST /ui-state/apply（需 Max）
 
-工作场景书签（MN Pinner 场景，不占屏、可读可改）。
+> [交互式](/docs/uistate/get-ui-state) · [交互式](/docs/uistate/post-ui-state-apply) · [危险纪律](/docs/reference/dangerous-endpoints)
 
-```bash
-curl -s "$BASE/ui-state" -H "$AUTH"
-curl -s -X POST "$BASE/ui-state/apply" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"state":{"aichat":false}}'
-```
-
-差量补丁（缺键保持；GET 整包可改后发回）。键多自解释（`immersive/aichat/review` 开关、`booklocation`、`splitinfo`）；`{_jsonvalueType}` 包装值原样带回。异步（~1.5s 分步动作），`queued:true` 仅提交，~2s 后 GET 对账所发键。三态：`accepted`/`conditional`（依赖缺失静默跳过，如 `researchurl` 需 `research:true`）/`rejected`（`play` 与 `doclayerid:"new"` 拒收）。缺 `topicid` 注入当前集；无开集拒绝。持久副作用改前告知：`theme`/`panelratio` 写全局偏好；`immersive` 脏同步；`researchurl` 加载任意 URL。已知限制：pin 含 `immersive` 恢复顺序 bug；沉浸浮动面板与 Agent 面板暂无键。
+- 工作场景书签。差量补丁（缺键保持；GET 整包可改后发回）。`{_jsonvalueType}` 包装值原样带回。
+- 异步（~1.5s），`queued:true` 仅提交，~2s 后 GET 对账所发键。三态 accepted/conditional/rejected（`play` 与 `doclayerid:"new"` 拒收）。
+- 缺 `topicid` 注入当前集；无开集拒绝。持久副作用改前告知（全局偏好/脏同步/任意 URL）。已知限制：含 `immersive` 的 pin 恢复顺序 bug。

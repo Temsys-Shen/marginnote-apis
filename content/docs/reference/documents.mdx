@@ -3,74 +3,68 @@ title: Documents
 description: 目录、页文本、视觉注释面、AI 目录、定位、导出、同步对账
 ---
 
-`{id}` 为 `bookmd5`。页码一律 **PDF 页序**（第一页=1），非印刷页码。
+`{id}` 为 `bookmd5`。页码一律 **PDF 页序**（第一页=1），非印刷页码。参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Documents 分组）。本页只保留判据与陷阱。
 
 ## GET /documents/\{id\}/outline（免 Max）
 
-章节页范围。字段是 **segments**。`hasToc:false`/目录粗失准 → 先判要不要写目录。`pageCount` 在离屏打开失败时报 0，以 `pages` 二分探末页为准（越界页回空文本不报错）。
+> [交互式](/docs/documents/get-documents-id-outline)
 
-相邻 segments `startPage` 不前进 = 源目录页码失准（服务端如实透传），用 pages 回读定真实边界或重写目录。
+- 字段是 **segments**。`hasToc:false`/目录粗失准 → 先判要不要写目录。`pageCount` 在离屏打开失败时报 0，以 `pages` 二分探末页为准（越界页回空文本不报错）。
+- 相邻 segments `startPage` 不前进 = 源目录页码失准（服务端如实透传），用 pages 回读定真实边界或重写目录。
 
 ## GET /documents/\{id\}/pages（免 Max）
 
-```bash
-curl -s "$BASE/documents/$MD5/pages?start=1&end=10" -H "$AUTH"
-curl -s "$BASE/documents/$MD5/pages?start=1&end=2&blocks=1" -H "$AUTH"
-```
+> [交互式](/docs/documents/get-documents-id-pages)
 
-≤60 页/次，大范围分次。读正文用它，不绕 prepare。无文本层页自动 OCR（判据为是否成句可读，非有无文本层）。`blocks=1` 为块探针（样本 1–2 页，返回 `{index,text,label}`；块序为版面检测输出序，非阅读序，归属按题号/语义自证）。
+- ≤60 页/次，大范围分次。读正文用它，不绕 prepare。无文本层页自动 OCR（判据为是否成句可读，非有无文本层）。
+- `blocks=1` 为块探针（样本 1–2 页；块序为版面检测输出序，非阅读序，归属按题号/语义自证）。
 
 ## GET /documents/\{id\}/pages/\{page\}/parts（免 Max）
 
-页视觉注释面：普通手写、插入/选择留白、留白物理页与手写、物理/引用/合并宿主关系。
+> [交互式](/docs/documents/get-documents-id-pages-index-parts)
 
-`?studySet=` 仅调旧 blank map 解析优先级，仍合并该文档所在全部 topic（`topicFilteringApplied:false`；各 `topicid` 不同正常，勿过滤）。`parts[]` 为可读图像清单（按 `contentPath` 或下条取图）；`blanks[].contentIds` 指归属逻辑留白；选择留白多 `segments` 保持一组；`mapBacked:false` 为恢复项（内容仍在）。
+- `?studySet=` 仅调旧 blank map 解析优先级，仍合并该文档所在全部 topic（各 `topicid` 不同正常，勿过滤）。
+- 选择留白多 `segments` 保持一组；`mapBacked:false` 为恢复项（内容仍在）。
 
 ## GET /documents/\{id\}/pages/\{page\}/content/\{contentId\}（免 Max）
 
-取上条 parts 中的手写/留白合成图。`?maxEdge=64–4096&studySet=`。先 parts 后按需取图，不逐页盲渲染。普通页文本仍走 `/pages`。
+> [交互式](/docs/documents/get-documents-id-pages-index-content-id)
+
+- 取上条 parts 中的手写/留白合成图。先 parts 后按需取图，不逐页盲渲染。普通页文本仍走 `/pages`。
 
 ## GET /documents/\{id\}/toc-candidates（免 Max）
 
-AI 目录标题候选。`?start=&end=`（≤60 硬上限，非推荐值；约 3s/页；45s 预算，超限回部分 + `truncated:true/nextStart/hint`，按 hint 从 `nextStart` 续扫并即时落盘；并发上限 2，与 pages 共享，超限立即 429 `SCAN_BUSY`）。
+> [交互式](/docs/documents/get-documents-id-toc-candidates)
 
-返回 `{page,text,height,anchor}`：`anchor` 原样回带；`height` 为字号代理（定层级用）。`pagesScanned=0`（越界/整段留白，无 nextStart，勿重试）vs `>0` 无候选（该段无标题/OCR 不可读）。
-
-清洗要点：章号章名拆条须合并；页内顺序非阅读序（`anchor.x` 恒中心，双栏先后靠编号自证）；去重后仍须按跨页复现过滤水印；`text` 不等文本层原文，勿精确串匹配。
+- 约 3s/页；45s 预算超限回部分 + `truncated/nextStart/hint`，按 hint 续扫并即时落盘；并发上限 2（与 pages 共享），超限立即 429。
+- `anchor` 原样回带；`height` 为字号代理（定层级用）。`pagesScanned=0`（越界/整段留白，无 nextStart，勿重试）vs `>0` 无候选（该段无标题/OCR 不可读）。
+- 清洗要点：章号章名拆条须合并；页内顺序非阅读序（双栏先后靠编号自证）；去重后仍须按跨页复现过滤水印；`text` 不等文本层原文，勿精确串匹配。
 
 ## POST /documents/\{id\}/toc（需 Max + confirm，真 dry-run）
 
-```bash
-# 写 AI 目录
-curl -s -X POST "$BASE/documents/$MD5/toc" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"entries":[{"title":"第一章 导论","page":12,"level":0}],"confirm":true}'
-# 切回原始 / 切回 AI
-curl -s -X POST "$BASE/documents/$MD5/toc" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"useOriginal":true,"confirm":true}'
-```
+> [交互式](/docs/documents/post-documents-id-toc) · [危险纪律](/docs/reference/dangerous-endpoints)
 
-页码须递增（否则 422 整批拒）；`level` 0–7（越级静默钳，看 `adjustedLevels`）。落 AI 目录位，原目录无损；再写覆盖上一份 AI 目录。**回退唯一口**即上（快照救不了目录）。不带 confirm 回 422 + `wouldWrite/adjustedLevels/pageCount`。用户 App 内生成中（409 `TOC_GENERATION_IN_PROGRESS`）等约 1 分钟后先 GET outline。
+- 页码须递增（否则 422 整批拒）；`level` 0–7（越级静默钳，看 `adjustedLevels`）。落 AI 目录位，原目录无损；再写覆盖上一份 AI 目录。
+- **回退唯一口**为切显示指针（快照救不了目录）。不带 confirm 回 422 + `wouldWrite` 预览。
+- 用户 App 内生成中（409 `TOC_GENERATION_IN_PROGRESS`）等约 1 分钟后先 GET outline。
 
 ## POST /documents/\{id\}/locate（免 Max）
 
-```bash
-curl -s -X POST "$BASE/documents/$MD5/locate" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"text":"逐字照抄的原文","page":12,"navigate":true}'
-```
+> [交互式](/docs/documents/post-documents-id-locate)
 
-`page` 必填（手边已有页码；不提供全书扫描）。回 `{found,page,matchedText,algorithm,score}`，**须核对 `matchedText`**。`no_match` 多为改写；`page_unreadable` 为页不可读/越界。`navigate:true` 仅滚动不高亮；跨文档不跳（`navigated:false` + `different_document_open`，先 open 切过去）。
+- `page` 必填（手边已有页码；不提供全书扫描）。回包**须核对 `matchedText`**。`no_match` 多为改写；`page_unreadable` 为页不可读/越界。
+- `navigate:true` 仅滚动不高亮；跨文档不跳（先 open 切过去）。
 
 ## POST /documents/\{id\}/export（免 Max，无 confirm）
 
-```bash
-curl -s -X POST "$BASE/documents/$MD5/export" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"topicid":"…","selectedPageNos":[2,3,4],"includeRelatedBlankPages":true}'
-```
+> [交互式](/docs/documents/post-documents-id-export)
 
-扁平 PDF。`topicid` 必填（定标注层）；`selectedPageNos` 为真实 PDF 页（省略=全书，空数组拒；禁 66000+ 虚拟留白页）；`includeRelatedBlankPages` 默认 true（关联留白由 native 隐式带上，不计数，CLI 预览分开展示 `estimatedOutputPages` 与 `relatedBlankPageCount`）。输出到外部导出根 `DocumentExports`（未配置落容器）。只建文件不改数据。若在跑 429 `EXPORT_BUSY`。CLI 推荐 plan → explain → from-plan 执行，且执行前读 `/capabilities` 确认端点已注册。
+- 扁平 PDF，只建文件不改数据。`topicid` 必填（定标注层）；`selectedPageNos` 为真实 PDF 页（省略=全书，空数组拒；禁 66000+ 虚拟留白页）；关联留白由 native 隐式带上不计数。
+- 输出到外部导出根 `DocumentExports`（未配置落容器）。若在跑 429 `EXPORT_BUSY`。CLI 推荐 plan → 用户确认 → from-plan 执行，且执行前读 `/capabilities` 确认端点已注册。
 
 ## GET /documents/\{id\}/sync-status（免 Max）
 
-`[?verifyHash=1]`（默认不算 hash；verifyHash 全文件扫描，大 PDF 慢；只核一份已实体化映射，`remainingUnverifiedMaterializedMappingCount≠0` 勿推广；外部 File Provider 一律 `unverified_external_provider`）。
+> [交互式](/docs/documents/get-documents-id-sync-status)
 
-以 `state` 为准：`database_reference_without_document_mapping`/`waiting_for_icloud_download` + `hasLearningData:true`（学习数据先行，勿称全量完整，结合两端计数与实际打开）；`library_record_without_document_mapping` + `hasLearningData:false`（仅目录，勿称笔记已到）；`available_local_only` 先看 `expectedByCurrentSettings`；`available_and_published` 仅本设备已发布；`verified_mismatch`/`icloud_error`/`mapped_but_not_materialized` 才列异常。`databaseQueryErrors` 存在为部分证据；全失败回可重试 `SYNC_DIAGNOSTIC_QUERY_FAILED`。
+- 默认不算 hash；`verifyHash` 全文件扫描，大 PDF 慢；只核一份已实体化映射，`remaining` 非零勿推广；外部 File Provider 一律 unverified。
+- 以 `state` 为准（见指南同步章节的状态表）；`databaseQueryErrors` 存在为部分证据；全失败回可重试码，勿译成“不存在”。

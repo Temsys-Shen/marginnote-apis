@@ -3,107 +3,113 @@ title: Notes
 description: 批量读卡、标签样式、移动复制删除、评论标题正文、合并折叠、挖空
 ---
 
+参数、Schema、多语言示例、Try-it 见各端点交互页（左侧 Notes 分组）。本页只保留跨参数的纪律：判据、陷阱与调用顺序。
+
 ## POST /notes/batch-get（免 Max，≤200/次）
 
-```bash
-curl -s -X POST "$BASE/notes/batch-get" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"noteIds":["…"]}'
-```
+> [交互式](/docs/notes/post-notes-batch-get)
 
-- `texts[]`：对象数组 `{index,text,excerpt,noteid,kind}`。`index` 0=卡正文，1..N=子笔记（评论接口用此号）；**稀疏**（无文本条目占号但不出场）；空留白亦返回（`kind:blank`，`noteid` 为留白实体 id，写内容走同一 `text` 端点）
-- `parts[]`：视觉顺序全量（含 `title/text/rich_text/blank/blank_image/excerpt_image/image/ink/audio/video/attachment`；`contentId/index/kind/noteid/excerpt` + 二进制项 `contentPath/mimeType` + 摘录图 `ocrText`；脑图手写 `source:mindmap`；0.31+ 合并留白 `blank_image`/`source:blank`；0.42+ 图片遮挡项带 `occlusion{coordinateSpace,masks[{index,rect,group?,flags?,isText?}]}` + `occlusionBaseContentPath`）。**`texts` 空先看 `parts`**
-- `metadata{colorIndex,fillIndex}`、`hashtags[]` + `hashtagPaths[{hashtag,path,name,segments,depth,ancestors}]`（存值为完整叶路径，`/` 分层；祖先为派生，勿写回）
+- `texts[]` 是对象数组 `{index,text,excerpt,noteid,kind}`，不是字符串数组。`index` 0=卡正文，1..N=子笔记（评论接口用此号）；**稀疏**（无文本条目占号但不出场）；空留白亦返回（`kind:blank`，`noteid` 为留白实体 id，写内容走同一 `text` 端点）。
+- `parts[]` 为视觉顺序全量；**`texts` 空先看 `parts`**，勿断言卡为空。
+- `hashtagPaths` 存值为完整叶路径，祖先为派生，勿写回。
 
 ## POST /notes/hashtags（需 Max + confirm，≤200 卡）
 
-```bash
-curl -s -X POST "$BASE/notes/hashtags" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"noteIds":["…"],"operation":"add","hashtags":["#医学/心血管/心衰"],"confirm":true}'
-```
+> [交互式](/docs/notes/post-notes-hashtags)
 
-标签须完整路径（可省首 `#`；空层级/`//`/多标签一串拒收）。`remove` 默认精确（删 `#医学` 不碰 `#医学/心血管`；连子一起删才 `includeDescendants:true`，仅 remove 合法）。`replace` 空数组=清空（须展示获同意）。禁 text 接口伪造（422 `HASHTAG_ROUTE_REQUIRED`，`details` 有规范示例）。比较不分大小写，保留首次拼写。整批一撤销组；同步引用、刷索引、独立回读；`persisted:true` 才成功。批量改前打快照；写完回读 `batch-get.hashtags`（批量对账集 `hashtags`）。
+- 标签须完整路径。`remove` 默认精确（删 `#医学` 不碰 `#医学/心血管`；连子一起删才 `includeDescendants:true`，仅 remove 合法）。`replace` 空数组=清空（须展示获同意）。
+- 禁 text 接口伪造（422 `HASHTAG_ROUTE_REQUIRED`）。比较不分大小写，保留首次拼写。
+- 整批一撤销组；`persisted:true` 才成功。批量改前打快照；写完回读 `batch-get.hashtags`（批量对账集 `hashtags`）。
 
 ## POST /notes/metadata（需 Max + confirm，≤200）
 
-```bash
-curl -s -X POST "$BASE/notes/metadata" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"noteIds":["…"],"patch":{"colorIndex":3,"fillIndex":2},"confirm":true}'
-```
+> [交互式](/docs/notes/post-notes-metadata)
 
-`colorIndex` 0..15、`fillIndex` -1..2（语义见色板页）。可传卡 id 或摘录 `noteid`。选色前读 `note-palette`。同步同源引用样式缓存；合并宿主 LinkNote 跟随卡片 UI 语义。独立 context 回读一致才 `persisted:true`；`SAVE_FAILED` 非成功。`collapsed`/子脑图/标题正文走专用端点。
+- `colorIndex` 0..15、`fillIndex` -1..2（语义见色板页）；选色前读 `note-palette`，禁硬编码颜色名。
+- 独立 context 回读一致才 `persisted:true`；`SAVE_FAILED` 非成功。`collapsed`/子脑图/标题正文走专用端点。
 
 ## POST /notes/move（需 Max + confirm，≤50/次）
 
-```bash
-curl -s -X POST "$BASE/notes/move" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"moves":[{"noteIds":["答1"],"targetParentNoteId":"题1"}],"confirm":true}'
-```
+> [交互式](/docs/notes/post-notes-move)
 
-同集改父子，不删不改内容，整批一撤销组。先展示逐卡方案获同意。**不调兄弟顺序/坐标**（无此能力，如实告知）。批量先打快照，方案靠 tree+batch-get。
+- 同集改父子，不删不改内容，整批一撤销组。先展示逐卡方案获同意。
+- **不调兄弟顺序/坐标**（无此能力，如实告知）。批量先打快照，方案靠 tree+batch-get。
 
 ## POST /notes/copy（需 Max + confirm，真 dry-run，≤50 根）
 
-`reference`（引用卡，内容同步）/ `clone`（独立克隆，分支内链接重映射）二选一，简单或 `copies[]` 批量。
+> [交互式](/docs/notes/post-notes-copy)
 
-复制所选根整棵分支（当时快照，不随源树后续调整同步）；祖先后代同选后代 `covered_by_selected_ancestor` 跳过；目标须已存在普通脑图卡；源禁隐藏/复习卡；可跨集（源文档按规则入目标集，同集不改归属）。不带 confirm 回 422 + `wouldCopy/skipped`。`persisted:true` 才成功（独立 context 回读新根/挂接/同步关系）。
+- `reference`（引用卡，内容同步）/ `clone`（独立克隆，分支内链接重映射）二选一。
+- 复制所选根整棵分支（当时快照，不随源树后续调整同步）；祖先后代同选后代 `covered_by_selected_ancestor` 跳过；目标须已存在普通脑图卡；源禁隐藏/复习卡；可跨集（源文档按规则入目标集，同集不改归属）。
+- 不带 confirm 回 422 + `wouldCopy/skipped`。`persisted:true` 才成功。
 
 ## POST /notes/delete（需 Max + confirm，真 dry-run，≤50/次，同集）
 
-只删点名卡，子卡按 `childrenReattachedTo` 接祖父（`grandparent`）或升顶层重排（`topLevel`，位置会跳，CLI 固有限制）。合并子笔记随卡消失；虚拟卡断引用转独立；闪卡复制体级联。回收站默认关，先打快照。流程：打点 → tree 看子节点 → 展示标题+子卡去向获同意 → 带 confirm → 转告 `deleted[].orphanedChildren/descendants/trashEnabled` + 逐条 `outcome`（`deleted` 真消失 / `hidden` 仅隐藏划线保留）。顶层卡额外提醒重排。
+> [交互式](/docs/notes/post-notes-delete)
+
+- 只删点名卡，子卡按 `childrenReattachedTo` 接祖父（`grandparent`）或升顶层重排（`topLevel`，位置会跳，CLI 固有限制）。合并子笔记随卡消失；虚拟卡断引用转独立；闪卡复制体级联。
+- 回收站默认关，先打快照。流程：打点 → tree 看子节点 → 展示标题+子卡去向获同意 → 带 confirm → 转告 `orphanedChildren/descendants/trashEnabled` + 逐条 `outcome`（`deleted` 真消失 / `hidden` 仅隐藏划线保留）。顶层卡额外提醒重排。
 
 ## POST /notes/fold（需 Max + confirm，≤200）
 
-```bash
-curl -s -X POST "$BASE/notes/fold" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"noteIds":["…"],"folded":true,"confirm":true}'
-```
+> [交互式](/docs/notes/post-notes-fold)
 
-最轻写动词。叶子 skip（`no_children`）。回 `changed/skipped`。脑图开着可能需重进。
+- 最轻写动词。叶子 skip（`no_children`）。脑图开着可能需重进。
 
 ## GET /notes/\{id\}/content/\{contentId\}（免 Max）
 
-`?maxEdge=64–4096`（默认 2048）`&layers=composite|base`（0.42+，base 省旧 mask 位图，按 `occlusionBaseContentPath` 用）。摘录/插图/手写回合成图；音视频回原始二进制。代价中：先 parts 定位必要项再取。
+> [交互式](/docs/notes/get-notes-id-content-id)
+
+- 摘录/插图/手写回合成图；音视频回原始二进制。代价中：先 parts 定位必要项再取。
 
 ## GET /notes/\{id\}/render（免 Max）
 
-`?format=png|pdf&width=320–1200`。整卡合成长图/PDF。超 3600 万像素拒绝。代价高：看整卡/视觉校对专用，不代批量文本读取。
+> [交互式](/docs/notes/get-notes-id-render)
+
+- 整卡合成长图/PDF。超 3600 万像素拒绝。代价高：看整卡/视觉校对专用，不代批量文本读取。
 
 ## POST /notes/\{id\}/image-occlusions（需 Max + confirm，真 dry-run）
 
-只给已存在图片/PDF 摘录笔记增/替原生遮罩（`highlight_pic.maskRects`；不建卡，不写 `complexQuestion`）。
+> [交互式](/docs/notes/post-notes-id-image-occlusions)
 
-```bash
-curl -s -X POST "$BASE/notes/$NID/image-occlusions" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"coordinateSpace":"normalized","operation":"add","masks":[{"rect":{"x":0.1,"y":0.1,"width":0.2,"height":0.1}}],"expectedSourceFingerprint":"…"}'
-```
-
-1..200 框；`add` 同页同矩形同组去重；`replace` 替换该源图已有遮罩。禁视觉模型直写：先读 batch-get + `occlusionBaseContentPath` 底图出候选并叠框预览。dry-run 与确认都带 `expectedSourceFingerprint`；确认另带 `expectedMaskFingerprint`（`details.maskFingerprint`）。变了回 409（重读重预览）。`persisted:true` 才成功（一 Undo 组，独立回读摘录与合并卡 `q_hpic`）。`existingReviewCardCount>0` 须转告：已有复习卡为快照，不自动改写，重建才进复习/Anki。
+- 只给已存在图片/PDF 摘录笔记增/替原生遮罩（不建卡，不写 `complexQuestion`）。
+- 1..200 框；`add` 同页同矩形同组去重；`replace` 替换该源图已有遮罩。禁视觉模型直写：先读 batch-get + 底图出候选并叠框预览。
+- dry-run 与确认都带 `expectedSourceFingerprint`；确认另带 `expectedMaskFingerprint`。变了回 409（重读重预览）。`persisted:true` 才成功。
+- `existingReviewCardCount>0` 须转告：已有复习卡为快照，不自动改写，重建才进复习/Anki。
 
 ## POST /notes/\{id\}/title、/text（需 Max + confirm）
 
-```bash
-curl -s -X POST "$BASE/notes/$NID/title" -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"text":"新标题","expectedPrefix":"当前值前32字","confirm":true}'
-```
+> [交互式](/docs/notes/post-notes-id-title) · [交互式](/docs/notes/post-notes-id-text)
 
-`expectedPrefix`（空传 `""`）+ 可选 `markdown`。编辑会话前打点；改写/删除展示原文→改后获同意。`text` 对 `kind:blank` 的 `texts[].noteid` 通用；同步合并宿主显示缓存（`groupCacheUpdated`）。判摘录卡：`texts[].excerpt` 任一 true 或 `sourceAnchor.hasExcerpt`（勿用 `sourceAnchor.page` 判 block 包）。摘录卡改文致脱钩（回源不受影响），须告知。
+- `expectedPrefix`（空传 `""`）。编辑会话前打点；改写/删除展示原文→改后获同意。
+- 判摘录卡：`texts[].excerpt` 任一 true 或 `sourceAnchor.hasExcerpt`（勿用 `sourceAnchor.page` 判 block 包）。摘录卡改文致脱钩（回源不受影响），须告知。
 
 ## POST /notes/\{id\}/comments（需 Max + confirm）
 
-追加。整条为 `marginnote4app://note/…` URL 时成真双链（整理回链旧卡用此，勿塞正文链接文本）。
+> [交互式](/docs/notes/post-notes-id-comments)
+
+- 追加。整条为 `marginnote4app://note/…` URL 时成真双链（整理回链旧卡用此，勿塞正文链接文本）。
 
 ## POST /notes/\{id\}/comments/\{index\}、/\{index\}/delete（需 Max + confirm）
 
-改写 `{text,expectedPrefix,confirm:true}`；删除 `{expectedPrefix,confirm:true}`。`index` 为 `texts[].index` 的 1..N（0 为卡正文，传 0 422）。先读最新；409 `COMMENT_CHANGED` 重读再来。
+> [交互式](/docs/notes/post-notes-id-comments-index) · [交互式](/docs/notes/post-notes-id-comments-index-delete)
+
+- `index` 为 `texts[].index` 的 1..N（0 为卡正文，传 0 422）。先读最新；409 `COMMENT_CHANGED` 重读再来。
 
 ## POST /notes/\{id\}/merge-branch（需 Max + confirm）
 
-`{confirm:true,recursive?}`。默认直接子卡；`recursive:true` 整 subtree（MN 菜单语义，Agent 默认收窄防爆）。先 dry-run 念 `willMerge[]`；合不了留树（`notMergedCount`）；摘要卡/子脑图根卡跳过（`skipped[]`）。一 undo 组。**合并（对方标题 `"; "` 拼接后消失），非链接。**
+> [交互式](/docs/notes/post-notes-id-merge-branch)
+
+- 默认直接子卡；`recursive:true` 整 subtree（Agent 默认收窄防爆）。先 dry-run 念 `willMerge[]`；合不了留树；摘要卡/子脑图根卡跳过。一 undo 组。**合并（对方消失），非链接。**
 
 ## POST /notes/\{id\}/fold-into-sub-map（需 Max + confirm）
 
-折子脑图（须有子节点，否则 422 `NO_CHILDREN`）；`{undo:true,confirm:true}` 展回。「放进子脑图」= move 为其子节点，无需新端点。
+> [交互式](/docs/notes/post-notes-id-fold-into-sub-map)
+
+- 折子脑图须有子节点（否则 422 `NO_CHILDREN`）；`undo:true` 展回。「放进子脑图」= move 为其子节点，无需新端点。
 
 ## POST /notes/\{id\}/focus（免 Max，无 confirm）
 
-`{topicid?}`。多集引用同一卡时指定集。走 URL scheme，与点击/Spotlight 同路。抢屏，仅用户要求时用；异步，事后 `/context` 对账。
+> [交互式](/docs/notes/post-notes-id-focus)
+
+- 多集引用同一卡时用 `topicid` 指定集。抢屏，仅用户要求时用；异步，事后 `/context` 对账。

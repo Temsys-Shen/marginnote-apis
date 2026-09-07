@@ -12,7 +12,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 - Base URL：`http://127.0.0.1:{port}/bridge/v1`（端口现查，默认 42340 起扫 20 个）
 - 路由总数：**72**（以运行时 `GET /capabilities` 为准）
-- 鉴权：除 `GET /status` 外一律 `Authorization: Bearer <token>`；**不要带 Origin 头**
+- 鉴权：除 `GET /status` 外一律 `Authorization: Bearer $TOKEN`；**不要带 Origin 头**
 - 订阅门：读/搜索/渲染/导航/prepare 不要求 Max；创建或修改内容/持久状态要求 Max（以 `requiresMax` 为准）
 - 权威顺序：**运行时 `/capabilities` 清单 ＞ 运行时 `GET /guide` ＞ 本站**
 

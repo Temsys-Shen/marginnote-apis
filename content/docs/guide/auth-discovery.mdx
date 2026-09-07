@@ -24,7 +24,7 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
     BASE="http://192.168.1.23:42340/bridge/v1"   # iPad 上打开 CLI 开关后显示的地址
     curl -s -X POST "$BASE/pair" -H 'Content-Type: application/json' \
       -d '{"code":"123456","deviceName":"我的电脑 · Claude Code"}'
-    # → {"token":"mnb0...."}  存好，后续请求带 Authorization: Bearer <token>
+    # → {"token":"mnb0...."}  存好，后续请求带 Authorization: Bearer $TOKEN
     ```
 
     - 配对码 6 位，5 分钟有效、只能用一次、错三次作废
@@ -47,7 +47,7 @@ MCP 可选接入（0.21 起，省掉手配 token）：
 
 ```bash
 claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp \
-  --header "Authorization: Bearer mnb0.…"
+  --header "Authorization: Bearer $TOKEN"
 ```
 
 接入后仅两个工具：`mn_guide`（运行时规程）与 `mn_call`（`{method,path,body}` 转发到同一批端点）。
@@ -78,7 +78,7 @@ BASE="http://127.0.0.1:$PORT/bridge/v1"
 curl -s "$BASE/status"   # 有 NONCE 则校验 instanceNonce 一致
 ```
 
-后续请求一律带 `-H "Authorization: Bearer $MN_BRIDGE_TOKEN"`。
+后续请求一律带 `-H "Authorization: Bearer $TOKEN"`。
 
 <Callout type="error">
 **不要带 Origin 头**（带了 403 `FORBIDDEN_ORIGIN`）。云上调试同样受此限制，

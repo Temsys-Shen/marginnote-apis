@@ -1,0 +1,5 @@
+# Cloudflare Pages 部署配置（沿用现有 `pnpm deploy:pages` 流程）。
+# nodejs_compat：functions/api/bridge-proxy.ts 经 fumadocs-openapi 原生
+# createProxy 转发，需要 Node 兼容运行时（node:fs/path 等仅构建期链路）。
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]

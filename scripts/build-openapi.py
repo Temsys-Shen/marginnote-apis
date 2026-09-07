@@ -4,9 +4,14 @@
 用法: python3 scripts/build-openapi.py
 输入: raw/capabilities.json, raw/status_auth.json
 输出: openapi/openapi.yaml
+
+META 管 tag/summary/语义/confirm；PARAMS 管 path/query 参数；
+BODIES 管请求体 JSON Schema。三者都以运行时 GET /guide 为准，
+capabilities 只提供路由清单与 requiresMax。
 """
 import json
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CAP = ROOT / "raw" / "capabilities.json"
@@ -21,7 +26,7 @@ META = {
     ("GET", "/context"): ("System", "用户此刻上下文", "只读。返回 studySet/currentPage/documents(含focused)/selectedNotes/focusedNote。currentPage.page 为 PDF 页序；blank 页用换算后的真实页。available:false 按 reason 回退，不重试。", False),
     ("GET", "/install"): ("Setup", "安装脚本（一次性码）", "GET /bridge/v1/install?code=xxx。code 10 分钟有效、只能用一次。成功返回 shell 安装脚本（写 token + 装 Skill）；失败 403 返回无效/过期提示脚本。", False),
     ("POST", "/install/code"): ("Setup", "安装码相关", "安装辅助路由，无 confirm 门，不轮换 token、不写 Skill 文件。具体语义以运行时 GET /guide 为准；刷新规程只读 GET /guide。", False),
-    ("POST", "/mcp"): ("Setup", "MCP 通道", "MCP 客户端接入点：claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp --header \"Authorization: Bearer <token>\"。工具仅 mn_guide（规程）与 mn_call（{method,path,body} 转发）。GET /mcp 未实现（501），以 POST 通道为准。", False),
+    ("POST", "/mcp"): ("Setup", "MCP 通道", "MCP 客户端接入点：claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp --header \"Authorization: Bearer $TOKEN\"。工具仅 mn_guide（规程）与 mn_call（{method,path,body} 转发）。GET /mcp 未实现（501），以 POST 通道为准。", False),
     ("GET", "/library/study-sets"): ("Library", "列出学习集", "返回学习集列表。不含复习卡组（卡组走 GET /decks）。支持 ?query= 过滤。", False),
     ("POST", "/library/study-sets"): ("Library", "新建空学习集", "Body {title, confirm:true}。返回 {topicid, isStudySet}，必须校验 isStudySet:true。空集含一张与集同名的根卡。", True),
     ("POST", "/library/documents/upload"): ("Library", "上传文档进资料库", "Body 为文件原始字节，参数走 query：?filename=必填&folder=可选&topicid=可选&confirm=1。filename 决定 MN 内名字；folder 为文档根相对路径；topicid 顺手绑集（以 addedToStudySet 为准）；confirm=1 必填（确认前已传完一遍，直接带最省流量）。同名不覆盖。无按本机路径导入。", True),
@@ -91,9 +96,457 @@ META = {
 
 TAG_ORDER = ["System", "Setup", "Library", "StudySets", "Documents", "Notes", "Decks", "Bundles", "Snapshots", "Search", "Sync", "UIState"]
 
+# path 模板变量说明（按端点逐个指定；未指定的用通用“路径 id”）
+PATH_DESCS = {
+    ("GET", "/study-sets/{id}/documents"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/documents"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/documents/{id}/delete"): {"id": "学习集 topicid（两处 id 含义不同，见名）"},
+    ("POST", "/study-sets/{id}/open"): {"id": "学习集 topicid"},
+    ("GET", "/study-sets/{id}/tree"): {"id": "学习集 topicid"},
+    ("GET", "/study-sets/{id}/sub-maps"): {"id": "学习集 topicid"},
+    ("GET", "/study-sets/{id}/snapshots"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/snapshots"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/delete"): {"id": "学习集 topicid（卡组删除走同一端点时为 deckId）"},
+    ("GET", "/study-sets/{id}/notebooks"): {"id": "学习集 topicid"},
+    ("GET", "/study-sets/{id}/hashtags"): {"id": "学习集 topicid"},
+    ("GET", "/study-sets/{id}/note-palette"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/mindmap-print/preview"): {"id": "学习集 topicid"},
+    ("POST", "/study-sets/{id}/mindmap-print/export"): {"id": "学习集 topicid"},
+    ("GET", "/documents/{id}/outline"): {"id": "文档 bookmd5"},
+    ("GET", "/documents/{id}/pages"): {"id": "文档 bookmd5"},
+    ("GET", "/documents/{id}/pages/{index}/parts"): {"id": "文档 bookmd5", "index": "PDF 页序（第一页=1，勿传留白虚拟页号）"},
+    ("GET", "/documents/{id}/pages/{index}/content/{id}"): {"id": "文档 bookmd5", "index": "PDF 页序"},
+    ("GET", "/documents/{id}/toc-candidates"): {"id": "文档 bookmd5"},
+    ("POST", "/documents/{id}/toc"): {"id": "文档 bookmd5"},
+    ("POST", "/documents/{id}/locate"): {"id": "文档 bookmd5"},
+    ("POST", "/documents/{id}/export"): {"id": "文档 bookmd5"},
+    ("GET", "/documents/{id}/sync-status"): {"id": "文档 bookmd5"},
+    ("POST", "/library/documents/{id}/delete"): {"id": "文档 bookmd5"},
+    ("GET", "/notes/{id}/content/{id}"): {"id": "卡片 noteid"},
+    ("GET", "/notes/{id}/render"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/image-occlusions"): {"id": "图片/PDF 摘录笔记 noteid"},
+    ("POST", "/notes/{id}/title"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/text"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/comments"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/comments/{index}"): {"id": "卡片 noteid", "index": "评论序号 1..N（0 为卡正文，传 0 会 422）"},
+    ("POST", "/notes/{id}/comments/{index}/delete"): {"id": "卡片 noteid", "index": "评论序号 1..N"},
+    ("POST", "/notes/{id}/merge-branch"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/fold-into-sub-map"): {"id": "卡片 noteid"},
+    ("POST", "/notes/{id}/focus"): {"id": "卡片 noteid"},
+    ("GET", "/decks/{id}/cards"): {"id": "复习卡组 deckId（与 topicid 不通用）"},
+    ("POST", "/decks/{id}/cards"): {"id": "复习卡组 deckId"},
+    ("POST", "/decks/{id}/open"): {"id": "复习卡组 deckId"},
+    ("GET", "/bundles/{id}/files"): {"id": "任务包 bundleId"},
+    ("POST", "/bundles/{id}/submit"): {"id": "任务包 bundleId"},
+    ("POST", "/bundles/{id}/focus"): {"id": "任务包 bundleId"},
+    ("POST", "/bundles/{id}/discard"): {"id": "任务包 bundleId"},
+    ("POST", "/snapshots/{id}/restore"): {"id": "快照 id（打点/导入/删除响应里的 snapshotId）"},
+}
+
+# query 参数：(method, path) -> [{name, required, type, desc, enum?}]
+QUERY = {
+    ("GET", "/install"): [
+        {"name": "code", "required": True, "type": "string", "desc": "一次性安装码，10 分钟有效、只能用一次"},
+    ],
+    ("GET", "/library/study-sets"): [
+        {"name": "query", "required": False, "type": "string", "desc": "按标题过滤学习集"},
+    ],
+    ("GET", "/decks"): [
+        {"name": "query", "required": False, "type": "string", "desc": "按标题过滤复习卡组"},
+    ],
+    ("GET", "/library/folders"): [
+        {"name": "path", "required": False, "type": "string", "desc": "文档根相对路径，空字符串为根"},
+        {"name": "depth", "required": False, "type": "integer", "desc": "列举深度"},
+    ],
+    ("GET", "/study-sets/{id}/tree"): [
+        {"name": "root", "required": False, "type": "string", "desc": "子脑图根卡 noteid，只读该张子脑图"},
+    ],
+    ("GET", "/documents/{id}/pages"): [
+        {"name": "start", "required": False, "type": "integer", "desc": "起始 PDF 页（第一页=1）"},
+        {"name": "end", "required": False, "type": "integer", "desc": "结束 PDF 页，单次 ≤60 页"},
+        {"name": "blocks", "required": False, "type": "integer", "desc": "=1 变块探针，返回块清单（较慢，探 1-2 页）"},
+    ],
+    ("GET", "/documents/{id}/pages/{index}/parts"): [
+        {"name": "studySet", "required": False, "type": "string", "desc": "仅调旧 blank map 解析优先级，仍合并全部 topic"},
+    ],
+    ("GET", "/documents/{id}/pages/{index}/content/{id}"): [
+        {"name": "maxEdge", "required": False, "type": "integer", "desc": "最长边 64–4096，默认按 parts 取图即可"},
+        {"name": "studySet", "required": False, "type": "string", "desc": "旧 blank map 解析优先级"},
+    ],
+    ("GET", "/documents/{id}/toc-candidates"): [
+        {"name": "start", "required": False, "type": "integer", "desc": "起始页"},
+        {"name": "end", "required": False, "type": "integer", "desc": "结束页，单次 ≤60 页硬上限"},
+    ],
+    ("GET", "/documents/{id}/sync-status"): [
+        {"name": "verifyHash", "required": False, "type": "integer", "desc": "=1 计算内容 hash（全文件扫描，大 PDF 慢）"},
+    ],
+    ("GET", "/notes/{id}/content/{id}"): [
+        {"name": "maxEdge", "required": False, "type": "integer", "desc": "最长边 64–4096，默认 2048"},
+        {"name": "layers", "required": False, "type": "string", "desc": "composite（默认）|base（0.42 起，省旧 mask 位图）", "enum": ["composite", "base"]},
+    ],
+    ("GET", "/notes/{id}/render"): [
+        {"name": "format", "required": False, "type": "string", "desc": "png|pdf", "enum": ["png", "pdf"]},
+        {"name": "width", "required": False, "type": "integer", "desc": "320–1200"},
+    ],
+    ("GET", "/bundles"): [
+        {"name": "origin", "required": False, "type": "string", "desc": "=bridge 只看自建任务包"},
+        {"name": "since", "required": False, "type": "string", "desc": "按时间过滤（磁盘包按目录创建时间，作业按开始时间）"},
+    ],
+    ("GET", "/bundles/{id}/files"): [
+        {"name": "path", "required": False, "type": "string", "desc": "包内文件路径，如 source.json；不传列文件清单"},
+    ],
+    ("GET", "/search"): [
+        {"name": "q", "required": True, "type": "string", "desc": "关键词；truncated:true 时加词缩小范围重搜"},
+        {"name": "scope", "required": False, "type": "string", "desc": "all|notes|studysets|documents", "enum": ["all", "notes", "studysets", "documents"]},
+    ],
+    ("GET", "/sync/legacy/events"): [
+        {"name": "afterSequence", "required": False, "type": "integer", "desc": "从该 sequence 之后取"},
+        {"name": "limit", "required": False, "type": "integer", "desc": "1..200，默认 50"},
+    ],
+    ("POST", "/library/documents/upload"): [
+        {"name": "filename", "required": True, "type": "string", "desc": "纯文件名，决定 MN 内名字；同名不覆盖"},
+        {"name": "folder", "required": False, "type": "string", "desc": "文档根相对路径；不传落到用户上次浏览文件夹"},
+        {"name": "topicid", "required": False, "type": "string", "desc": "顺手绑定的学习集，以 addedToStudySet 为准"},
+        {"name": "confirm", "required": True, "type": "integer", "desc": "=1 确认写入（文件确认前已传完，直接带最省流量）"},
+    ],
+}
+
+# 请求体：(method, path) -> {"mime": str, "required": [..], "props": {name: (type, desc, extra?)}, "desc": str}
+# extra 可含 enum/items/$ref 内联；想保持生成器简单，复杂结构用 type+desc 表达。
+def _p(t, d, **kw):
+    return {"type": t, "desc": d, **kw}
+
+BODIES = {
+    ("POST", "/library/study-sets"): {
+        "required": ["title", "confirm"],
+        "props": {
+            "title": _p("string", "新学习集标题，调用前告知用户"),
+            "confirm": _p("boolean", "确认建集"),
+        },
+    },
+    ("POST", "/library/documents/{id}/delete"): {
+        "required": ["confirm"],
+        "props": {"confirm": _p("boolean", "确认删除；仅干净撤销（无锚定卡片）才执行")},
+    },
+    ("POST", "/study-sets/{id}/documents"): {
+        "required": ["bookmd5", "confirm"],
+        "props": {
+            "bookmd5": _p("string", "已在资料库的文档"),
+            "confirm": _p("boolean", "确认加入"),
+        },
+    },
+    ("POST", "/study-sets/{id}/documents/{id}/delete"): {
+        "required": ["confirm"],
+        "props": {"confirm": _p("boolean", "先不带打一次看 notesLosingSource，告知用户后再带")},
+    },
+    ("POST", "/study-sets/{id}/open"): {
+        "required": [],
+        "props": {"bookmd5": _p("string", "可选，不给即主文档；须本机有文件")},
+    },
+    ("POST", "/study-sets/{id}/snapshots"): {
+        "required": [],
+        "props": {"description": _p("string", "版本点说明，不加 Agent: 前缀")},
+    },
+    ("POST", "/study-sets/{id}/delete"): {
+        "required": ["expectedTitle", "confirm"],
+        "props": {
+            "expectedTitle": _p("string", "须与库中现值完全一致，否则 409 TITLE_MISMATCH"),
+            "confirm": _p("boolean", "确认删除（最重写动词）"),
+            "keepHighlights": _p("boolean", "默认 true（隐藏卡+保留划线）；false 才真删干净"),
+            "keepSnapshotHistory": _p("boolean", "默认 true（自动打快照）；false 连快照历史一起清"),
+        },
+    },
+    ("POST", "/study-sets/{id}/mindmap-print/preview"): {
+        "required": ["mode"],
+        "props": {
+            "mode": _p("string", "keepStructure|classic|cardFlow", enum=["keepStructure", "classic", "cardFlow"]),
+            "densityValue": _p("number", "0..1，classic 兼容值 0.995"),
+            "rootNoteId": _p("string", "可选分支根卡，只打该分支"),
+        },
+    },
+    ("POST", "/study-sets/{id}/mindmap-print/export"): {
+        "required": [],
+        "props": {
+            "plan": _p("object", "preview 返回并保存的完整计划（含 pages/visibleDepth/visibleNoteIds）"),
+            "fileName": _p("string", "可选输出文件名"),
+        },
+    },
+    ("POST", "/documents/{id}/toc"): {
+        "required": ["confirm"],
+        "props": {
+            "entries": _p("array", "目录条目 [{title,page,level(0-7),anchor?}]，页码须递增", items={"type": "object"}),
+            "confirm": _p("boolean", "确认写入（多集可见，快照救不了）"),
+            "useOriginal": _p("boolean", "true=切回原始目录（唯一回退口）"),
+            "useAI": _p("boolean", "true=切回 AI 目录"),
+        },
+    },
+    ("POST", "/documents/{id}/locate"): {
+        "required": ["text", "page"],
+        "props": {
+            "text": _p("string", "逐字照抄的原文"),
+            "page": _p("integer", "必填，PDF 页序"),
+            "navigate": _p("boolean", "true 仅滚动不高亮；跨文档不跳"),
+        },
+    },
+    ("POST", "/documents/{id}/export"): {
+        "required": ["topicid"],
+        "props": {
+            "topicid": _p("string", "必填，定标注层"),
+            "selectedPageNos": _p("array", "真实 PDF 页数组；省略=全书；空数组被拒；勿传留白虚拟页", items={"type": "integer"}),
+            "includeRelatedBlankPages": _p("boolean", "默认 true，留白由 native 隐式带上"),
+        },
+    },
+    ("POST", "/notes/batch-get"): {
+        "required": ["noteIds"],
+        "props": {"noteIds": _p("array", "卡片 id 数组，≤200/次", items={"type": "string"})},
+    },
+    ("POST", "/notes/hashtags"): {
+        "required": ["noteIds", "operation", "hashtags", "confirm"],
+        "props": {
+            "noteIds": _p("array", "≤200", items={"type": "string"}),
+            "operation": _p("string", "add|remove|replace", enum=["add", "remove", "replace"]),
+            "hashtags": _p("array", "完整叶路径数组；replace 空数组=清空（须同意）", items={"type": "string"}),
+            "includeDescendants": _p("boolean", "仅 remove 有效，连同子标签一起删"),
+            "confirm": _p("boolean", "确认写入"),
+        },
+    },
+    ("POST", "/notes/metadata"): {
+        "required": ["noteIds", "patch", "confirm"],
+        "props": {
+            "noteIds": _p("array", "≤200", items={"type": "string"}),
+            "patch": _p("object", "{colorIndex 0..15?, fillIndex -1..2?}，选色前读 note-palette"),
+            "confirm": _p("boolean", "确认修改"),
+        },
+    },
+    ("POST", "/notes/move"): {
+        "required": ["confirm"],
+        "props": {
+            "noteIds": _p("array", "待移卡片（简单形态）", items={"type": "string"}),
+            "targetParentNoteId": _p("string", "目标父卡（简单形态）"),
+            "moves": _p("array", "批量形态 [{noteIds,targetParentNoteId}]，合计 ≤50/次", items={"type": "object"}),
+            "confirm": _p("boolean", "调用前展示逐卡方案获同意"),
+        },
+    },
+    ("POST", "/notes/copy"): {
+        "required": ["confirm"],
+        "props": {
+            "noteIds": _p("array", "所选根卡（简单形态），≤50 根", items={"type": "string"}),
+            "targetParentNoteId": _p("string", "目标父卡（简单形态，须已存在普通脑图卡）"),
+            "mode": _p("string", "reference（同步）|clone（独立）", enum=["reference", "clone"]),
+            "copies": _p("array", "批量形态 [{noteIds,targetParentNoteId,mode}]", items={"type": "object"}),
+            "confirm": _p("boolean", "先展示源卡/模式→目标分组获同意"),
+        },
+    },
+    ("POST", "/notes/delete"): {
+        "required": ["noteIds", "confirm"],
+        "props": {
+            "noteIds": _p("array", "≤50，同集；只删点名卡", items={"type": "string"}),
+            "confirm": _p("boolean", "展示标题+子卡去向获同意；先打快照"),
+        },
+    },
+    ("POST", "/notes/fold"): {
+        "required": ["noteIds", "folded", "confirm"],
+        "props": {
+            "noteIds": _p("array", "≤200", items={"type": "string"}),
+            "folded": _p("boolean", "true 折叠 / false 展开"),
+            "confirm": _p("boolean", "确认"),
+        },
+    },
+    ("POST", "/notes/{id}/image-occlusions"): {
+        "required": ["masks", "expectedSourceFingerprint"],
+        "props": {
+            "coordinateSpace": _p("string", "固定 normalized（左上角归一化）"),
+            "operation": _p("string", "add|replace", enum=["add", "replace"]),
+            "masks": _p("array", "1..200 [{rect:{x,y,w,h},group?,flags?,isText?}]", items={"type": "object"}),
+            "expectedSourceFingerprint": _p("string", "dry-run 与确认都必带"),
+            "expectedMaskFingerprint": _p("string", "确认写入必带（dry-run 返回）"),
+            "confirm": _p("boolean", "确认写入；不带为真 dry-run"),
+        },
+    },
+    ("POST", "/notes/{id}/title"): {
+        "required": ["text", "confirm"],
+        "props": {
+            "text": _p("string", "新标题"),
+            "expectedPrefix": _p("string", "当前值前 32 字，为空传 \"\""),
+            "confirm": _p("boolean", "展示原文→改后获同意"),
+            "markdown": _p("boolean", "标题是否按 Markdown 解析"),
+        },
+    },
+    ("POST", "/notes/{id}/text"): {
+        "required": ["text", "confirm"],
+        "props": {
+            "text": _p("string", "新正文；摘录卡改文须先告知脱钩后果"),
+            "expectedPrefix": _p("string", "当前值前 32 字，为空传 \"\""),
+            "confirm": _p("boolean", "确认修改"),
+            "markdown": _p("boolean", "是否按 Markdown 解析"),
+        },
+    },
+    ("POST", "/notes/{id}/comments"): {
+        "required": ["text", "confirm"],
+        "props": {
+            "text": _p("string", "评论内容；整条 note URL 成真双链"),
+            "confirm": _p("boolean", "确认追加"),
+        },
+    },
+    ("POST", "/notes/{id}/comments/{index}"): {
+        "required": ["text", "confirm"],
+        "props": {
+            "text": _p("string", "新评论内容"),
+            "expectedPrefix": _p("string", "当前评论前 32 字"),
+            "confirm": _p("boolean", "确认改写"),
+        },
+    },
+    ("POST", "/notes/{id}/comments/{index}/delete"): {
+        "required": ["confirm"],
+        "props": {
+            "expectedPrefix": _p("string", "当前评论前 32 字"),
+            "confirm": _p("boolean", "确认删除"),
+        },
+    },
+    ("POST", "/notes/{id}/merge-branch"): {
+        "required": ["confirm"],
+        "props": {
+            "confirm": _p("boolean", "先把 willMerge[] 念给用户听再带"),
+            "recursive": _p("boolean", "true 合整棵子树，默认只合直接子卡"),
+        },
+    },
+    ("POST", "/notes/{id}/fold-into-sub-map"): {
+        "required": ["confirm"],
+        "props": {
+            "confirm": _p("boolean", "确认折叠/展回"),
+            "undo": _p("boolean", "true 展回普通分支"),
+        },
+    },
+    ("POST", "/notes/{id}/focus"): {
+        "required": [],
+        "props": {"topicid": _p("string", "多集引用同一卡时指定在哪个集里打开")},
+    },
+    ("POST", "/decks"): {
+        "required": ["title", "confirm"],
+        "props": {
+            "title": _p("string", "新卡组标题"),
+            "confirm": _p("boolean", "确认新建；校验 isDeck:true"),
+        },
+    },
+    ("POST", "/decks/{id}/cards"): {
+        "required": ["cards", "confirm"],
+        "props": {
+            "cards": _p("array", "≤50 [{sourceNoteId(必填), question?, questionContentId?, title?}]，question 与 questionContentId 互斥", items={"type": "object"}),
+            "confirm": _p("boolean", "确认加入"),
+        },
+    },
+    ("POST", "/bundles/prepare"): {
+        "required": ["topicid", "bookmd5", "segments"],
+        "props": {
+            "topicid": _p("string", "目标学习集"),
+            "bookmd5": _p("string", "源文档"),
+            "segments": _p("array", "[{startPage,endPage,title}] PDF 页序；可非连续；实际页数 ≤60", items={"type": "object"}),
+            "preset": _p("string", "book-breakdown|source-structure|exam-general|dictionary", enum=["book-breakdown", "source-structure", "exam-general", "dictionary"]),
+            "anchorMode": _p("string", "page_text|block", enum=["page_text", "block"]),
+            "title": _p("string", "任务说明"),
+            "cardStyle": _p("object", "{defaultFillIndex -1..2}"),
+            "async": _p("boolean", ">~10 页必 true，走作业模式"),
+        },
+    },
+    ("POST", "/bundles/{id}/submit"): {
+        "required": [],
+        "props": {
+            "targetParentNoteId": _p("string", "可选落点父卡，先 tree 选好"),
+            "withBlank": _p("boolean", "每条成功摘录后插标准空留白"),
+            "excerptMode": _p("string", "child（默认）|link", enum=["child", "link"]),
+            "resultMarkdown": _p("string", "仅跨设备：result.md 全文内联交回"),
+        },
+    },
+    ("POST", "/snapshots/{id}/restore"): {
+        "required": ["confirm"],
+        "props": {
+            "confirm": _p("boolean", "展示版本时间/说明获同意；不带为真 dry-run"),
+            "force": _p("boolean", "USER_EDITS_PRESENT 且用户确认覆盖才带"),
+        },
+    },
+    ("POST", "/sync/legacy/recheck"): {
+        "required": [],
+        "props": {
+            "database": _p("boolean", "默认 true，核对 CloudKit 数据库通道"),
+            "documents": _p("boolean", "默认 true，核对文档通道"),
+        },
+    },
+    ("POST", "/ui-state/apply"): {
+        "required": ["state"],
+        "props": {"state": _p("object", "差量补丁；缺键保持现状")},
+    },
+    ("POST", "/mcp"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "MCP JSON-RPC 通道，工具仅 mn_guide 与 mn_call（{method,path,body} 转发到同一批端点）。",
+    },
+    ("POST", "/install/code"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "安装辅助路由，具体语义以运行时 GET /guide 为准；不轮换 token。",
+    },
+    ("POST", "/decks/{id}/open"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "打开复习卡组（空 body 即可）；id 与学习集不通用。",
+    },
+    ("POST", "/bundles/{id}/focus"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "聚焦导入结果（空 body 即可）；异步，事后 /context 对账。",
+    },
+    ("POST", "/bundles/{id}/discard"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "删包/取消作业（空 body 即可）；幂等，已导入卡片不受影响。",
+    },
+    ("POST", "/sync/legacy/inventory"): {
+        "required": [],
+        "props": {},
+        "raw_desc": "只读盘点触发端（空 body 即可）；observe-only，不上传/删。",
+    },
+}
+
 
 def yaml_escape(s):
     s = s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+    return s
+
+
+def q(s):
+    return '"%s"' % yaml_escape(str(s))
+
+
+def emit_schema(obj, indent):
+    """把 python 结构打成 YAML 行（字符串一律双引号，避免解析歧义）。"""
+    lines = []
+    pad = " " * indent
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, (dict, list)):
+                lines.append(f"{pad}{k}:")
+                lines.extend(emit_schema(v, indent + 2))
+            else:
+                lines.append(f"{pad}{k}: {q(v)}")
+    elif isinstance(obj, list):
+        for v in obj:
+            if isinstance(v, (dict, list)):
+                lines.append(f"{pad}-")
+                lines.extend(emit_schema(v, indent + 2))
+            else:
+                lines.append(f"{pad}- {q(v)}")
+    else:
+        lines.append(f"{pad}{q(obj)}")
+    return lines
+
+
+def prop_schema(p):
+    s = {"type": p["type"]}
+    if "enum" in p:
+        s["enum"] = p["enum"]
+    if "items" in p:
+        s["items"] = p["items"]
+    s["description"] = p["desc"]
     return s
 
 
@@ -147,6 +600,70 @@ def main():
             out_lines.append("      x-requires-confirm: " + ("true" if confirm else "false"))
             if method == "GET" and path == "/status":
                 out_lines.append("      security: []")
+            # path 参数（模板变量逐个出；delete 双 id 处做区分命名展示）
+            path_vars = re.findall(r"\{(\w+)\}", path)
+            if path_vars:
+                descs = PATH_DESCS.get((method, path), {})
+                out_lines.append("      parameters:")
+                seen = set()
+                for v in path_vars:
+                    if v in seen:
+                        continue
+                    seen.add(v)
+                    d = descs.get(v, "路径 id（见描述）")
+                    out_lines.append(f"        - name: {v}")
+                    out_lines.append("          in: path")
+                    out_lines.append("          required: true")
+                    out_lines.append("          schema:")
+                    out_lines.append("            type: string")
+                    out_lines.append(f'          description: "{yaml_escape(d)}"')
+            # query 参数
+            for qp in QUERY.get((method, path), []):
+                if not path_vars:
+                    out_lines.append("      parameters:")
+                    path_vars = ["_q"]
+                out_lines.append(f"        - name: {qp['name']}")
+                out_lines.append(f"          in: query")
+                out_lines.append("          required: " + ("true" if qp["required"] else "false"))
+                out_lines.append("          schema:")
+                out_lines.append(f"            type: {qp['type']}")
+                if "enum" in qp:
+                    out_lines.append("            enum:")
+                    for e in qp["enum"]:
+                        out_lines.append(f'              - "{yaml_escape(e)}"')
+                out_lines.append(f'          description: "{yaml_escape(qp["desc"])}"')
+            # 请求体
+            body = BODIES.get((method, path))
+            if body is not None:
+                if (method, path) == ("POST", "/library/documents/upload"):
+                    pass  # 下面单独处理二进制体
+                else:
+                    out_lines.append("      requestBody:")
+                    out_lines.append("        content:")
+                    out_lines.append("          application/json:")
+                    out_lines.append("            schema:")
+                    if body.get("props"):
+                        schema = {
+                            "type": "object",
+                            "required": body.get("required", []),
+                            "properties": {k: prop_schema(v) for k, v in body["props"].items()},
+                        }
+                        if body.get("raw_desc"):
+                            schema["description"] = body["raw_desc"]
+                        out_lines.extend(emit_schema(schema, 14))
+                    else:
+                        out_lines.append("              type: object")
+                        if body.get("raw_desc"):
+                            out_lines.append(f'              description: "{yaml_escape(body["raw_desc"])}"')
+            if (method, path) == ("POST", "/library/documents/upload"):
+                out_lines.append("      requestBody:")
+                out_lines.append("        required: true")
+                out_lines.append("        content:")
+                out_lines.append("          application/octet-stream:")
+                out_lines.append("            schema:")
+                out_lines.append("              type: string")
+                out_lines.append("              format: binary")
+                out_lines.append('              description: "文件原始字节；参数走 query（filename/folder/topicid/confirm）"')
             out_lines.append("      responses:")
             out_lines.append("        '200':")
             out_lines.append('          description: 成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）')
