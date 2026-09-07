@@ -7,11 +7,14 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 <Callout type="info">
 下表是 72 路由速查。每个端点的交互式文档（参数 Schema、多语言代码示例）见侧边栏「交互式 API」分组（按 Tag 分组，如从 `system/get-status` 开始）。
+发即执行的端点先读[危险端点纪律](/docs/reference/dangerous-endpoints)。
 </Callout>
 
 > 来源：运行时 `GET /capabilities`（Bridge API v0.49 / App 4.5.0 / routeCount 72）。
-> `Max` = `requiresMax`（有效 token 下是否另需 MarginNote Max）；`Cfm` = 是否需 `confirm:true`。
-> 详情见各分域页；契约原文见 [运行时能力](/docs/contract/capabilities)。
+> `Max` = `requiresMax`（有效 token 下是否另需 MarginNote Max）；`Cfm` = 是否需 `confirm:true`（JSON body；`upload` 例外，走 query `confirm=1`，见脚注①）。
+> 无 Cfm 标记即无 confirm 门，发即执行（`prepare/submit/focus/discard`、打快照、`ui-state/apply`、`install/code` 等）。
+> `Cfm ✅` 中仅六个重动词为真 dry-run（不带回 422 + 已验事实），其余仅门控，须用只读端点自核。
+> 详情见各分域页与[危险端点纪律](/docs/reference/dangerous-endpoints)；契约原文见 [运行时能力](/docs/contract/capabilities)。
 
 | 方法 | 路径 | Max | Cfm | 说明 |
 |---|---|---|---|---|

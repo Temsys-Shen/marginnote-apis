@@ -52,6 +52,8 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
       -H 'Content-Type: application/json' -d '{"targetParentNoteId":"<可选>"}'
     # → {rootNoteId, version, preImportSnapshotId, receipt, parsed, warnings}
     ```
+
+    无 confirm 门，发即 commit（见[危险端点纪律](/docs/reference/dangerous-endpoints)）。提交前复述「哪章、多少卡、进哪个集」；别拿 submit 试参数，校验用 `GET /bundles`。
   </Step>
   <Step>
     ### 聚焦结果

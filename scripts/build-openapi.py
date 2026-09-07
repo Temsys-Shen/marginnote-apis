@@ -20,7 +20,7 @@ META = {
     ("GET", "/guide"): ("System", "运行时操作规程 Markdown", "用现有 Bearer token 读取，与已加载 Skill 的 guideVersion/guideHash 比对，不一致则以返回为准。只读刷新，不轮换 token。", False),
     ("GET", "/context"): ("System", "用户此刻上下文", "只读。返回 studySet/currentPage/documents(含focused)/selectedNotes/focusedNote。currentPage.page 为 PDF 页序；blank 页用换算后的真实页。available:false 按 reason 回退，不重试。", False),
     ("GET", "/install"): ("Setup", "安装脚本（一次性码）", "GET /bridge/v1/install?code=xxx。code 10 分钟有效、只能用一次。成功返回 shell 安装脚本（写 token + 装 Skill）；失败 403 返回无效/过期提示脚本。", False),
-    ("POST", "/install/code"): ("Setup", "安装码相关", "运行时能力清单中的安装辅助路由，具体语义以 /guide 为准。", False),
+    ("POST", "/install/code"): ("Setup", "安装码相关", "安装辅助路由，无 confirm 门，不轮换 token、不写 Skill 文件。具体语义以运行时 GET /guide 为准；刷新规程只读 GET /guide。", False),
     ("POST", "/mcp"): ("Setup", "MCP 通道", "MCP 客户端接入点：claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp --header \"Authorization: Bearer <token>\"。工具仅 mn_guide（规程）与 mn_call（{method,path,body} 转发）。GET /mcp 未实现（501），以 POST 通道为准。", False),
     ("GET", "/library/study-sets"): ("Library", "列出学习集", "返回学习集列表。不含复习卡组（卡组走 GET /decks）。支持 ?query= 过滤。", False),
     ("POST", "/library/study-sets"): ("Library", "新建空学习集", "Body {title, confirm:true}。返回 {topicid, isStudySet}，必须校验 isStudySet:true。空集含一张与集同名的根卡。", True),
@@ -34,7 +34,7 @@ META = {
     ("GET", "/study-sets/{id}/tree"): ("StudySets", "脑图树", "返回扁平 nodes[]（{noteid,parent,depth,childCount,…}），父子靠 parent 拼，非嵌套 children。subMapId 为归属标签（住在哪张子脑图里）。title 超 64 截断；完整内容走 batch-get。?root= 读单张子脑图。", False),
     ("GET", "/study-sets/{id}/sub-maps"): ("StudySets", "列子脑图", "每项 {noteid(根卡),title,cardCount,parentPath,depth}，顺序同 App。depth>0 为嵌套。", False),
     ("GET", "/study-sets/{id}/snapshots"): ("StudySets", "列学习集快照", "版本点列表。复用语义注意：内容无变化时复用既有版本点。", False),
-    ("POST", "/study-sets/{id}/snapshots"): ("StudySets", "打学习集快照", "Body {description}（不加 Agent: 前缀，服务端加）。无变化时复用并回 created:false + warnings；旧服务端无 created 字段时须回读列表核对条数。批量写前必打。", True),
+    ("POST", "/study-sets/{id}/snapshots"): ("StudySets", "打学习集快照", "Body {description}（不加 Agent: 前缀，服务端加）。无 confirm 门，发即执行。无变化时复用并回 created:false + warnings；旧服务端无 created 字段时须回读列表核对条数。批量写前必打。", False),
     ("POST", "/study-sets/{id}/delete"): ("StudySets", "删除学习集", "最重写动词。Body {expectedTitle(须与库中完全一致), confirm:true, keepHighlights?=true, keepSnapshotHistory?=true}。默认隐藏卡片+保留划线+自动打快照（preDeleteSnapshotId）。彻底清才传 false（不可恢复）。卡组删除走同一端点（keepHighlights:false 才真删干净）。", True),
     ("GET", "/study-sets/{id}/notebooks"): ("StudySets", "学习集引用的文档笔记本", "返回该集引用了哪些文档笔记本。", False),
     ("GET", "/study-sets/{id}/hashtags"): ("StudySets", "学习集标签树", "返回实际存储 hashtags[]、派生扁平 nodes[]、嵌套 tree[]。directCardCount 仅直存；cardCount 含后代；derived:true 为推导层。", False),
@@ -76,7 +76,7 @@ META = {
     ("POST", "/bundles/prepare"): ("Bundles", "准备拆书任务包", "Body {topicid, bookmd5, segments[{startPage,endPage,title}](PDF 页序，非连续可，实际页数≤60), preset(book-breakdown|source-structure|exam-general|dictionary), anchorMode(page_text|block), title?, cardStyle{defaultFillIndex -1..2}?, async?}。>~10 页必 async:true（202 {jobId,bundleId,bundlePath,state:preparing} + 轮询 GET /bundles；参数错同步 404/422）。单飞（429 PREPARE_BUSY 看 details.runningJob/retryAfterSeconds）。exam-general 必须配 block（含 role 标注），否则静默退化；错配 0.18+ 回 warnings（停下改组合重 prepare）。同步小包阻塞到完工（curl ≥300s）。", False),
     ("GET", "/bundles"): ("Bundles", "列任务包/作业", "?origin=bridge(只看自建) &since=(磁盘包按目录创建时间，作业按开始时间)。字段 bundleId/jobId/bundlePath/topicid/bookmd5/createdAt/state(preparing|prepared|imported|failed|cancelled)+progress/version/rootNoteId/running。state 缺字段按缺席处理。jobId 非 null 不等于本会话活作业。", False),
     ("GET", "/bundles/{id}/files"): ("Bundles", "列包文件 / 取单文件", "?path= 取单个原始内容（curl -o 落盘）。跨设备读包靠它。", False),
-    ("POST", "/bundles/{id}/submit"): ("Bundles", "提交导入（commit）", "Body {targetParentNoteId?, withBlank?, excerptMode?:child|link, resultMarkdown?(仅跨设备)}。无 confirm 门，发即真执行。返回 {rootNoteId, version, preImportSnapshotId(存好，USER_EDITS_PRESENT 时带 force:true 才覆盖), receipt, parsed{headings,importedCards,wikilinks,excerptsTotal,excerptsAnchored,failedExcerpts[]}, warnings, excerptStatsTruncated?, blankInsertion?}。headings≠importedCards 即丢卡；excerptsAnchored 不等即有未定位摘录（no_match 多为改写原文）。并发重复提交 409 SUBMIT_IN_FLIGHT。", True),
+    ("POST", "/bundles/{id}/submit"): ("Bundles", "提交导入（commit）", "Body {targetParentNoteId?, withBlank?, excerptMode?:child|link, resultMarkdown?(仅跨设备)}。无 confirm 门，发即真执行。返回 {rootNoteId, version, preImportSnapshotId(存好，USER_EDITS_PRESENT 时带 force:true 才覆盖), receipt, parsed{headings,importedCards,wikilinks,excerptsTotal,excerptsAnchored,failedExcerpts[]}, warnings, excerptStatsTruncated?, blankInsertion?}。headings≠importedCards 即丢卡；excerptsAnchored 不等即有未定位摘录（no_match 多为改写原文）。并发重复提交 409 SUBMIT_IN_FLIGHT。", False),
     ("POST", "/bundles/{id}/focus"): ("Bundles", "聚焦导入结果", "无 confirm 门。异步，事后 /context 对账。", False),
     ("POST", "/bundles/{id}/discard"): ("Bundles", "删除任务包 / 取消作业", "幂等。已导入卡片不受影响。对 preparing 即取消（cancelledJob 非 null 为真取消）。刚 discard 立刻重 prepare 易 429（等取消检查点）。同步 prepare 被并发 discard 则 409 PREPARE_CANCELLED。500 DISCARD_FAILED 为目录删不掉（残留按 details.bundleId 手工清）。", False),
     ("POST", "/snapshots/{id}/restore"): ("Snapshots", "回退快照", "Body {confirm:true(, force:true 若 USER_EDITS_PRESENT 且用户确认覆盖)}。回退整集到过去，自动先打回退前保护点（protectionSnapshotId）。目标集正开着回 409 STUDY_SET_IN_USE（切走再试）。文档目录不在快照覆盖范围。真 dry-run（422 + wouldRestoreToVersion/快照时间/说明/卡数）。", True),
@@ -86,7 +86,7 @@ META = {
     ("POST", "/sync/legacy/recheck"): ("Sync", "旧同步安全重核", "Body {database?=true, documents?=true}。复用 checkSync+PopulateShelf，不 reset/删/覆盖；但可能应用待处理远端变更。accepted 仅受理，记 operationId/startSequence 后读 events/status。", False),
     ("POST", "/sync/legacy/inventory"): ("Sync", "旧同步只读盘点", "分页观察 private zone 顶层存在性。Query 最终一致 + 非快照，结果非权威（observed≠完整；possible_mismatch 须按 record ID 核验）。observe-only，不上传/删；独立低优先级非蜂窝队列；关 Bridge 即关。会耗配额。", False),
     ("GET", "/ui-state"): ("UIState", "读界面状态", "工作场景书签读端。键多自解释；{_jsonvalueType} 包装值原样带回。", False),
-    ("POST", "/ui-state/apply"): ("UIState", "应用界面状态", "Body {state:{…}}（差量补丁；缺键保持）。异步（~1.5s），queued:true 仅提交，~2s 后 GET 对账。accepted/conditional（依赖缺失静默跳过）/rejected（play 与 doclayerid:new 拒收）。缺 topicid 注入当前集；无开集则拒绝。theme/panelratio 写全局偏好；immersive 弄脏同步；researchurl 加载任意 URL。", True),
+    ("POST", "/ui-state/apply"): ("UIState", "应用界面状态", "Body {state:{…}}（差量补丁；缺键保持）。无 confirm 门，发即提交。异步（~1.5s），queued:true 仅提交，~2s 后 GET 对账。accepted/conditional（依赖缺失静默跳过）/rejected（play 与 doclayerid:new 拒收）。缺 topicid 注入当前集；无开集则拒绝。theme/panelratio 写全局偏好；immersive 弄脏同步；researchurl 加载任意 URL。", False),
 }
 
 TAG_ORDER = ["System", "Setup", "Library", "StudySets", "Documents", "Notes", "Decks", "Bundles", "Snapshots", "Search", "Sync", "UIState"]

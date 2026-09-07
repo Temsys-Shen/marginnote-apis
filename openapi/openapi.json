@@ -152,7 +152,7 @@
       "post": {
         "operationId": "post-install-code",
         "summary": "安装码相关",
-        "description": "运行时能力清单中的安装辅助路由，具体语义以 /guide 为准。",
+        "description": "安装辅助路由，无 confirm 门，不轮换 token、不写 Skill 文件。具体语义以运行时 GET /guide 为准；刷新规程只读 GET /guide。",
         "tags": [
           "Setup"
         ],
@@ -614,12 +614,12 @@
       "post": {
         "operationId": "post-study-sets-id-snapshots",
         "summary": "打学习集快照",
-        "description": "Body {description}（不加 Agent: 前缀，服务端加）。无变化时复用并回 created:false + warnings；旧服务端无 created 字段时须回读列表核对条数。批量写前必打。",
+        "description": "Body {description}（不加 Agent: 前缀，服务端加）。无 confirm 门，发即执行。无变化时复用并回 created:false + warnings；旧服务端无 created 字段时须回读列表核对条数。批量写前必打。",
         "tags": [
           "StudySets"
         ],
         "x-requires-max": true,
-        "x-requires-confirm": true,
+        "x-requires-confirm": false,
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1655,7 +1655,7 @@
           "Bundles"
         ],
         "x-requires-max": true,
-        "x-requires-confirm": true,
+        "x-requires-confirm": false,
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"
@@ -1858,12 +1858,12 @@
       "post": {
         "operationId": "post-ui-state-apply",
         "summary": "应用界面状态",
-        "description": "Body {state:{…}}（差量补丁；缺键保持）。异步（~1.5s），queued:true 仅提交，~2s 后 GET 对账。accepted/conditional（依赖缺失静默跳过）/rejected（play 与 doclayerid:new 拒收）。缺 topicid 注入当前集；无开集则拒绝。theme/panelratio 写全局偏好；immersive 弄脏同步；researchurl 加载任意 URL。",
+        "description": "Body {state:{…}}（差量补丁；缺键保持）。无 confirm 门，发即提交。异步（~1.5s），queued:true 仅提交，~2s 后 GET 对账。accepted/conditional（依赖缺失静默跳过）/rejected（play 与 doclayerid:new 拒收）。缺 topicid 注入当前集；无开集则拒绝。theme/panelratio 写全局偏好；immersive 弄脏同步；researchurl 加载任意 URL。",
         "tags": [
           "UIState"
         ],
         "x-requires-max": true,
-        "x-requires-confirm": true,
+        "x-requires-confirm": false,
         "responses": {
           "200": {
             "description": "成功（具体 schema 见 docs/reference 对应章节与运行时 /guide）"

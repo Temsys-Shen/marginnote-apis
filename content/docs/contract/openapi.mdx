@@ -10,7 +10,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 机器可读契约：仓库根 `openapi/openapi.yaml`（OpenAPI 3.1）。
 
 - 由 `raw/capabilities.json` 经 `scripts/build-openapi.py` 生成，含全部 **72 路由**（`method + path`）
-- 每个 operation 带 `x-requires-max` / `x-requires-confirm`（与总览表一致）
+- 每个 operation 带 `x-requires-max` / `x-requires-confirm`（与总览表一致；`upload` 的 confirm 走 query `confirm=1`，其余为 JSON `confirm:true`；`false` 即无门、发即执行，见[危险端点纪律](/docs/reference/dangerous-endpoints)）
 - `GET /status` 标 `security: []`（免鉴权）；其余默认 `bearerAuth`
 - 通用 `401/403/422` 语义已写入每个 operation；`ApiError` schema 见 `components.schemas`
 - `x-bridge` 记录 `bridgeApiVersion/routeCount/apiFingerprint/guideVersion/guideHash/presets/anchorModes`

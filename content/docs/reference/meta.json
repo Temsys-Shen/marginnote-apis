@@ -1,5 +1,5 @@
 {
   "title": "接口参考",
   "icon": "Library",
-  "pages": ["overview", "system", "library", "study-sets", "documents", "notes", "decks", "bundles", "misc"]
+  "pages": ["overview", "dangerous-endpoints", "system", "library", "study-sets", "documents", "notes", "decks", "bundles", "misc"]
 }

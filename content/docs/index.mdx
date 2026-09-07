@@ -4,6 +4,7 @@ description: MarginNote 4 本地 Agent Bridge 完整 HTTP 接口文档（Bridge 
 ---
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
 
 # MarginNote Agent Bridge HTTP API
 
@@ -14,6 +15,11 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 - 鉴权：除 `GET /status` 外一律 `Authorization: Bearer <token>`；**不要带 Origin 头**
 - 订阅门：读/搜索/渲染/导航/prepare 不要求 Max；创建或修改内容/持久状态要求 Max（以 `requiresMax` 为准）
 - 权威顺序：**运行时 `/capabilities` 清单 ＞ 运行时 `GET /guide` ＞ 本站**
+
+<Callout type="warn">
+本站是构建时刻的静态快照，不是权威。连上实例后第一件事是读运行时 `GET /status`（对 `guideVersion/guideHash`）→ `GET /guide` → `GET /capabilities`，不一致时以运行时为准。
+发即执行的危险端点先读[危险端点纪律](/docs/reference/dangerous-endpoints)。
+</Callout>
 
 <Cards>
   <Card title="连接与鉴权发现" href="/docs/guide/auth-discovery" />

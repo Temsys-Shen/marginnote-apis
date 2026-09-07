@@ -50,7 +50,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
   <Accordion title="confirm 门清单（不带即 422 且不执行）">
     `notes/move`、`notes/copy`、`notes/delete`、`notes/fold`、`notes/metadata`、`notes/hashtags`、`notes/{id}/image-occlusions`、`notes/{id}/title|text|comments*`、`study-sets/{id}/delete`、`study-sets/{id}/documents`、`library/study-sets`(POST)、`documents/{md5}/toc`、`snapshots/{id}/restore`。
 
-    **无此门**（发即执行）：`prepare` / `submit` / `focus` / `discard`。别拿它们试参数；`submit` 校验用 `GET /bundles`。
+    **无此门**（发即执行）：`prepare` / `submit` / `focus` / `discard`、打快照（`study-sets/{id}/snapshots`）、`ui-state/apply`、`install/code`。别拿它们试参数；`submit` 校验用 `GET /bundles`。完整纪律见[危险端点纪律](/docs/reference/dangerous-endpoints)。
   </Accordion>
   <Accordion title="鉴权与订阅">
     Bearer 是资料隐私边界；订阅是写能力门。读/搜索/渲染/导航/prepare 免 Max；创建或修改内容/持久状态需 Max。

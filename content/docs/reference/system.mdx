@@ -53,9 +53,9 @@ curl -sSL "http://127.0.0.1:42340/bridge/v1/install?code=xxx" | sh
 
 code 10 分钟有效、只能用一次。成功返回安装脚本：写 `~/.config/mn-bridge/token`（600）、装 Skill 到各家 `skills/mn-bridge/SKILL.md`、提示可选 MCP 接入。失败返回过期提示脚本（403）。
 
-## POST /install/code（Bearer）
+## POST /install/code（Bearer，安装辅助，无 confirm 门）
 
-能力清单中的安装辅助路由，语义以 `/guide` 为准。
+能力清单中的安装辅助路由，无 confirm 轮换保护。刷新规程只读 `GET /guide`（不调安装接口、不轮换 token、不覆写磁盘文件），语义以运行时 `/guide` 为准。详见[危险端点纪律](/docs/reference/dangerous-endpoints)。
 
 ## POST /mcp（Bearer）
 
