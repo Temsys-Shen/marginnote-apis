@@ -1,73 +1,76 @@
 ---
-title: 连接与鉴权发现
-description: 同机发现、跨设备配对、开场对账三步
+title: 连接与鉴权
+description: 同机连接、跨设备配对、首次检查
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
-# 连接与鉴权发现
+# 连接与鉴权
 
-<Tabs items={['A. 同机（macOS）', 'B. 跨设备（iPad/iPhone）']}>
-  <Tab value="A. 同机（macOS）">
+<Tabs items={['同机', '跨设备']}>
+  <Tab value="同机">
     Bridge 只监听 `127.0.0.1`。
 
     - MarginNote 设置 → Lab →「MarginNote CLI」已开启
-    - 令牌三选一：`~/.config/mn-bridge/token`（跑过安装命令就有）、用户直接给、环境变量 `MN_BRIDGE_TOKEN`
-    - 用户没装过：设置 → Lab →「Copy Agent Setup Command」，粘进终端执行（写令牌 + 装 Skill + 可选接 MCP）
+    - 令牌来源：`~/.config/mn-bridge/token` 文件、直接提供、环境变量 `MN_BRIDGE_TOKEN`
+    - 未安装时：设置 → Lab →「Copy Agent Setup Command」，粘进终端执行
   </Tab>
-  <Tab value="B. 跨设备（iPad/iPhone）">
+  <Tab value="跨设备">
     走局域网，需配对：
 
     ```bash
-    BASE="http://192.168.1.23:42340/bridge/v1"   # iPad 上打开 CLI 开关后显示的地址
+    BASE="http://192.168.1.23:42340/bridge/v1"
     curl -s -X POST "$BASE/pair" -H 'Content-Type: application/json' \
-      -d '{"code":"123456","deviceName":"我的电脑 · Claude Code"}'
-    # → {"token":"mnb0...."}  存好，后续请求带 Authorization: Bearer $TOKEN
+      -d '{"code":"123456","deviceName":"MacBook"}'
     ```
 
-    - 配对码 6 位，5 分钟有效、只能用一次、错三次作废
-    - 失败一律同一句 `PAIRING_FAILED`（有意不区分原因），让用户重新生成
-    - `curl -s "$BASE/"`（免 token）可验地址，返回引导
-    - MN 保持前台；iOS 挂起后台 App 会断连（系统行为，非故障）
-    - 局域网明文，只在可信网络用
+    返回 `{"token":"mnb0...."}`。后续请求在 `Authorization` 头携带该 token。
+
+    - iPad 上打开 CLI 开关后显示地址，填入 `BASE`
+    - 配对码 6 位，5 分钟有效，单次使用，错三次作废
+    - 失败返回统一的 `PAIRING_FAILED`，不区分原因。失败后重新生成配对码
+    - `GET $BASE/` 无需 token，返回引导，可用于验证地址
+    - MarginNote 保持前台。iOS 切到后台后连接断开，属于系统行为
+    - 局域网传输为明文，仅在可信网络使用
   </Tab>
 </Tabs>
 
-<Callout type="warn">
-跨设备下三个不可逆端点需设备端点按 Allow（`confirm:true` 后挂起最多 60 秒）：
-`study-sets/{id}/delete`、`notes/delete`、`snapshots/{id}/restore`。
+## 跨设备确认
 
-- 200 = Allow；403 `APPROVAL_DENIED` = Deny（停下并告知，不换说法重试）
-- 408 `APPROVAL_TIMEOUT` = 60 秒无人理（让用户看屏幕后重试，勿自动重试）
-</Callout>
+`study-sets/{id}/delete`、`notes/delete`、`snapshots/{id}/restore` 在跨设备下需要设备端按 Allow。带 `confirm:true` 的请求会挂起，最多 60 秒。
 
-MCP 可选接入（0.21 起，省掉手配 token）：
+| 返回 | 含义 |
+|---|---|
+| 200 | 设备端已 Allow |
+| 403 `APPROVAL_DENIED` | 设备端已 Deny |
+| 408 `APPROVAL_TIMEOUT` | 60 秒内设备端无响应，确认设备状态后重试 |
+
+## MCP 接入
 
 ```bash
 claude mcp add --transport http marginnote http://127.0.0.1:{port}/bridge/v1/mcp \
   --header "Authorization: Bearer $TOKEN"
 ```
 
-接入后仅两个工具：`mn_guide`（运行时规程）与 `mn_call`（`{method,path,body}` 转发到同一批端点）。
+接入后提供 `mn_guide` 与 `mn_call` 两个工具。`mn_guide` 返回运行时规程，`mn_call` 以 `{method,path,body}` 转发到同一批端点。
 
-## 同机发现（跨设备跳过本节）
+## 同机发现
+
+跨设备跳过本节。
 
 ```bash
-# 别用 grep -i margin | head -1：同机可有十来个 Margin* 容器，首个多半不是运行中的
 BRIDGE_JSON=""
 for f in ~/Library/Containers/*[Mm]argin*/Data/Library/Application\ Support/MNAgentBridge/bridge.json \
          ~/Library/Application\ Support/MNAgentBridge/bridge.json; do
   [ -r "$f" ] && { BRIDGE_JSON="$f"; break; }
 done
 
-# 用 sed 而非 jq（jq 非系统自带）
 if [ -n "$BRIDGE_JSON" ]; then
   PORT=$(sed -n 's/.*"port"[^0-9]*\([0-9][0-9]*\).*/\1/p' "$BRIDGE_JSON" 2>/dev/null | head -1)
   NONCE=$(sed -n 's/.*"instanceNonce"[^"]*"\([^"]*\)".*/\1/p' "$BRIDGE_JSON" 2>/dev/null | head -1)
 fi
-# 读不到常见于缺完全磁盘访问（TCC EPERM）；lsof 扫不到也不等于没跑（沙盒进程表残缺）
 if [ -z "$PORT" ]; then
   PORT=$(lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | grep -i margin \
          | grep -o '127\.0\.0\.1:[0-9]*' | head -1 | cut -d: -f2)
@@ -75,39 +78,39 @@ fi
 PORT=${PORT:-42340}
 
 BASE="http://127.0.0.1:$PORT/bridge/v1"
-curl -s "$BASE/status"   # 有 NONCE 则校验 instanceNonce 一致
+curl -s "$BASE/status"
 ```
 
-后续请求一律带 `-H "Authorization: Bearer $TOKEN"`。
+`bridge.json` 读不到常见于缺少完全磁盘访问权限。`lsof` 扫不到不代表 Bridge 未运行，受限环境的进程表可能残缺。端口缺省 42340。`status` 返回 `instanceNonce` 时与本地值比对。
+
+后续请求在 `Authorization` 头携带 Bearer token。
 
 <Callout type="error">
-**不要带 Origin 头**（带了 403 `FORBIDDEN_ORIGIN`）。云上调试同样受此限制，
-见[接口总览](/docs/reference/overview)。
+携带 Origin 头的请求会被拒绝，返回 403 `FORBIDDEN_ORIGIN`。见[错误处理](/docs/guide/errors)。
 </Callout>
 
-## 开场对账（连上后第一件事）
+## 首次检查
 
 <Steps>
   <Step>
     ### 读 `GET /status`
-    除 `bridgeApiVersion`/`routeCount`/`apiFingerprint` 外，0.34+ 还返回 `guideVersion`/`guideHash`（完整 SHA-256）。
+    返回 `bridgeApiVersion`、`routeCount`、`apiFingerprint`、`guideVersion`、`guideHash`。`guideHash` 为完整 SHA-256。
   </Step>
   <Step>
     ### 规程不一致则刷新
-    运行时的 guide 版本或 hash 与已加载规程不一致 → 用**现有 Bearer**读 `GET /guide`，以返回 Markdown 为当前会话规程。只读刷新：**不调 `/install`、不轮换 token、不覆写磁盘文件**。旧 Bridge 无此字段才回落 `/capabilities` 对账。
+    运行时的 guide 版本或 hash 与已加载规程不一致时，用现有 Bearer token 读 `GET /guide`，以返回的 Markdown 为当前会话规程。只读刷新，不调 `/install`，不轮换 token，不覆写磁盘文件。缺少这些字段时用 `/capabilities` 核对。
   </Step>
   <Step>
     ### 读 `GET /capabilities`
-    实际注册的全部路由 `{routes:[{method,path,requiresMax}]}` + `presets`/`anchorModes` 等。`requiresMax:false` 仅表示有效 token 下免 Max，不是免 token。**清单里有而规程没写的可用；规程有而清单没有的别调。**
+    返回实际注册的全部路由 `{routes:[{method,path}]}`，以及 `presets`、`anchorModes` 等。仅调用清单中的路由。
   </Step>
 </Steps>
 
-## 403/401 速查
+## 403 与 401
 
 | 现象 | 含义 | 动作 |
 |---|---|---|
-| `401 UNAUTHORIZED` | 令牌不对 | 重装安装命令换 token；TCP 通说明 Bridge 活着 |
-| `403 FORBIDDEN_ORIGIN` | 带了 Origin 头 | 去掉重试（或走本站 Playground 代理） |
-| `403 MAX_REQUIRED` | 该写路由需 Max，用户无订阅 | 该写请求不重试不绕路，只读可继续 |
-| 跨设备 403 `APPROVAL_DENIED` | 用户在设备上按了 Deny | 停下并告知，不换说法重试 |
-| 跨设备 408 `APPROVAL_TIMEOUT` | 60s 无人理 | 让用户看设备屏幕后重试，不自动重试 |
+| `401 UNAUTHORIZED` | 令牌缺失或无效 | 更换 token 后重试。TCP 可达而 401 说明令牌无效 |
+| `403 FORBIDDEN_ORIGIN` | 请求带了 Origin 头 | 去掉 Origin 头重试 |
+| 跨设备 403 `APPROVAL_DENIED` | 设备端拒绝了请求 | 见跨设备确认 |
+| 跨设备 408 `APPROVAL_TIMEOUT` | 设备端 60 秒内无响应 | 确认设备状态后重试 |

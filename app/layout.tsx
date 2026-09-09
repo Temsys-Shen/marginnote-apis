@@ -7,7 +7,7 @@ export const metadata = {
     template: '%s | mnapis',
     default: 'mnapis',
   },
-  description: 'MarginNote 4 本地 Agent Bridge 完整 HTTP 接口文档（Bridge API v0.49 / 72 路由）',
+  description: 'MarginNote 本地 Bridge HTTP 接口文档',
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {

@@ -1,50 +1,49 @@
 ---
 title: 简介
-description: MarginNote 4 本地 Agent Bridge 完整 HTTP 接口文档（Bridge API v0.49 / 72 路由）
+description: MarginNote 本地 Bridge HTTP 接口文档
 ---
 
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
+import { YaakButton } from '@/components/yaak-button';
 
-# MarginNote Agent Bridge HTTP API
+# MarginNote Local Bridge HTTP API
 
-本地 Bridge 的完整 HTTP 接口文档。适用于 MarginNote 4（App 4.5.0 / Bridge API v0.49）。
+本地 Bridge 的 HTTP 接口文档。
 
-- Base URL：`http://127.0.0.1:{port}/bridge/v1`（端口现查，默认 42340 起扫 20 个）
-- 路由总数：**72**（以运行时 `GET /capabilities` 为准）
-- 鉴权：除 `GET /status` 外一律 `Authorization: Bearer $TOKEN`；**不要带 Origin 头**
-- 订阅门：读/搜索/渲染/导航/prepare 不要求 Max；创建或修改内容/持久状态要求 Max（以 `requiresMax` 为准）
-- 权威顺序：**运行时 `/capabilities` 清单 ＞ 运行时 `GET /guide` ＞ 本站**
-
-<Callout type="warn">
-本站是构建时刻的静态快照，不是权威。连上实例后第一件事是读运行时 `GET /status`（对 `guideVersion/guideHash`）→ `GET /guide` → `GET /capabilities`，不一致时以运行时为准。
-发即执行的危险端点先读[危险端点纪律](/docs/reference/dangerous-endpoints)。
-</Callout>
+- Base URL 为 `http://127.0.0.1:{port}/bridge/v1`。端口每次现查，默认从 42340 起扫 20 个。
+- 公开端点为 `GET /`、`GET /status`、`GET /install`、`POST /pair`。其余请求在 `Authorization` 头携带 Bearer token。
+- 请求不带 Origin 头。携带 Origin 头的请求会被拒绝。
+- 运行时返回的 `GET /capabilities` 清单与此处的静态文档不一致时，用运行时的。
 
 <Cards>
-  <Card title="连接与鉴权发现" href="/docs/guide/auth-discovery" />
+  <Card title="连接与鉴权" href="/docs/guide/auth-discovery" />
   <Card title="标准工作流" href="/docs/guide/workflows" />
-  <Card title="错误处理与纪律" href="/docs/guide/errors" />
+  <Card title="错误处理" href="/docs/guide/errors" />
   <Card title="交互式 API 参考" href="/docs/api" />
 </Cards>
 
-## 快速连通性检查
+## 连通性检查
 
 ```bash
-# 1. 免鉴权探活（200 = Bridge 活着）
 curl -s http://127.0.0.1:42340/bridge/v1/status
 
-# 2. 带 token 对账（authorized 应为 true）
 TOKEN=$(cat ~/.config/mn-bridge/token)
 curl -s http://127.0.0.1:42340/bridge/v1/status -H "Authorization: Bearer $TOKEN"
 curl -s http://127.0.0.1:42340/bridge/v1/capabilities -H "Authorization: Bearer $TOKEN" | head -c 500
 ```
 
-令牌获取：MarginNote 设置 → Lab →「Copy Agent Setup Command」，粘进终端执行。
-安装码 10 分钟有效、只能用一次。跨设备走局域网配对（见指南）。
+200 表示 Bridge 正常。带 token 的 status 返回 `authorized:true` 表示令牌有效。
+
+令牌获取方式：MarginNote 设置 → Lab →「Copy Agent Setup Command」，粘进终端执行。安装码 10 分钟有效，单次使用。跨设备走局域网配对，见指南。
+
+## 在 Yaak 里调试
+
+<YaakButton />
+
+导入后在 Yaak 里填写 base 与 Bearer token。
 
 ## 来源
 
-- `raw/`：一次性安装链接的原始响应存档与运行时 `/status` `/capabilities` `/guide` 快照
-- `openapi/openapi.yaml`：由 `raw/capabilities.json` 经 `scripts/build-openapi.py` 生成的 OpenAPI 3.1（含 72 路由），本站交互式参考即由它渲染
-- 语义细节来自运行时 `GET /guide`（mn-bridge Skill v0.49），已提炼进各参考页
+- `openapi/openapi.yaml`：仓库 bot 从 MarginNote 源代码生成的 OpenAPI 3.1。本站交互式参考由它渲染。
+- `openapi/openapi.json`：由 `openapi.yaml` 经 `scripts/yaml-to-json.mjs` 转换，供构建时静态 import。

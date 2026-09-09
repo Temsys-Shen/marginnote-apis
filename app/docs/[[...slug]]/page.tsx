@@ -11,6 +11,7 @@ import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { OpenAPIPage } from '@/components/api-page';
+import { YaakButton } from '@/components/yaak-button';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -19,7 +20,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   const markdownUrl = getPageMarkdownUrl(page).url;
 
-  // fumadocs-openapi 虚拟页面：交互式 API 参考
+  // fumadocs-openapi 虚拟页面：交互式 API 参考。Playground 已关闭，调试走 Yaak
   if (page.type === 'openapi') {
     return (
       <DocsPage toc={page.data.toc} full>
@@ -27,6 +28,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         <DocsDescription>{page.data.description}</DocsDescription>
         <div className="flex flex-row gap-2 items-center border-b pb-6">
           <MarkdownCopyButton markdownUrl={markdownUrl} />
+          <YaakButton />
         </div>
         <DocsBody>
           <OpenAPIPage {...page.data.getOpenAPIPageProps()} />

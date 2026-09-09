@@ -3,17 +3,15 @@ import type { Document } from 'fumadocs-openapi';
 import spec from '../openapi/openapi.json';
 
 /**
- * OpenAPI 数据源：`openapi/openapi.json`（由 openapi.yaml 转换而来，
- * 见 scripts/yaml-to-json.mjs）。
+ * OpenAPI 数据源为 `openapi/openapi.json`，由 openapi.yaml 转换而来，
+ * 见 scripts/yaml-to-json.mjs。openapi.yaml 由仓库 bot 从 MarginNote
+ * 源代码生成。
  *
- * 注意：必须用静态 import + 函数式 input，把 spec 打进构建产物。
- * 若传文件路径字符串，fumadocs-openapi 会在**运行时**读文件系统，
- * 纯静态托管（Cloudflare Pages）下没有可读的 fs。
+ * 用静态 import 加函数式 input，把 spec 打进构建产物。传文件路径字符串时，
+ * fumadocs-openapi 会在运行时读文件系统，纯静态托管下没有可读的 fs。
+ *
+ * 调试走 Yaak 一键导入，见 components/yaak-button.tsx。
  */
 export const openapi = createOpenAPI({
   input: { bridge: () => spec as unknown as Document },
-  // Playground 发送走同源官方代理（去浏览器 Origin，防 Bridge 403）。
-  // 代理是 Cloudflare Pages Function（functions/api/bridge-proxy.ts，
-  // 随 out/ 一起部署）：`pnpm preview` 本机联调与云上部署可用，`pnpm dev` 无此路由。
-  proxyUrl: '/api/bridge-proxy',
 });

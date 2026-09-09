@@ -1,64 +1,60 @@
 ---
-title: 错误处理与纪律
-description: 状态码速查、confirm 门清单、鉴权与订阅
+title: 错误处理
+description: 状态码、confirm、鉴权
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-# 错误处理与纪律
+# 错误处理
 
 所有错误形如 `{error:{code,message,retryable}, bridgeApiVersion}`。
 
-## 连不上先分清是谁的问题
+## 连接失败时先定位
 
-1. 先打**不带 token** 的 `curl -s "$BASE/status"`：200 = Bridge 活着，是你这边的问题，别让用户动 MN。
-2. `curl: (7) Failed to connect` 只说明「我连不上」≠「服务没跑」。再查 MN 是否运行、Lab 开关、端口（重发现）。
-3. 调用方受限常见且表象相同（沙盒/容器/网络策略挡 loopback）：换不受限执行方式打一次 `/status`；那边通这边不通 = 你的环境问题。
-4. **别拿 lsof 扫不到当没跑**：受限环境进程表残缺，以 `/status` 为准。
-5. `403/401` 不是连接问题（见下表）。
-6. MN 重启有几秒空窗，撞上等一下重试。
+1. 先请求不带 token 的 `curl -s "$BASE/status"`。200 表示 Bridge 正常，问题在请求侧。
+2. `curl: (7) Failed to connect` 只说明本次连接失败，不代表服务未运行。再查 MarginNote 运行状态、Lab 开关、端口。
+3. 沙盒、容器、网络策略可能挡住 loopback，表象与服务未运行相同。换不受限环境请求一次 `/status`。那边通这边不通，问题在当前环境。
+4. `lsof` 扫不到不代表未运行，受限环境的进程表可能残缺。连接状态看 `/status`。
+5. 403 与 401 见下表，与连接无关。
+6. MarginNote 重启有几秒空窗，遇到后等待重试。
 
 ## 状态码速查
 
 | 码 | code | 含义与动作 |
 |---|---|---|
-| 401 | `UNAUTHORIZED` | 令牌缺失/无效。重装换 token |
-| 403 | `FORBIDDEN_ORIGIN` | 带了 Origin 头。去掉重试 |
-| 403 | `MAX_REQUIRED` | 该写路由需 Max 而用户无订阅。该写不重试不绕路，只读继续 |
-| 422 | `CONFIRM_REQUIRED` | 缺 `confirm:true` 且未执行。其中六个重动词为**真 dry-run**（已跑完全部只读校验，`details` 可直接复述给用户）；其余端点仅门控，未做对象校验，用只读端点自核 |
-| 422 | `HASHTAG_ROUTE_REQUIRED` | 用 text 接口写标签。走 `POST /notes/hashtags`，`details` 有规范示例 |
-| 422 | 其它 | 参数错：页码越界/层级/标签路径/preset 白名单外等，按 `details` 修 |
-| 404 | `TOPIC_NOT_FOUND` 等 | 集被删/在回收站，回①重选 |
-| 409 | `SUBMIT_IN_FLIGHT` | 同一 bundle 上一 submit 还在跑。等 `retryAfterSeconds` 后查 `GET /bundles`，多半已导完，勿重发 |
-| 409 | `TITLE_MISMATCH` | 删集时 `expectedTitle` 对不上，`details.actualTitle` 为真值 |
-| 409 | `COMMENT_CHANGED` | 评论被改过，重读 batch-get 再来 |
-| 409 | `USER_EDITS_PRESENT` | submit/恢复时用户手改过，展示 `changedNodes` 获同意后带 `force:true` |
-| 409 | `STUDY_SET_IN_USE` | 回退时目标集正开着（闪退风险）。切走再试 |
-| 409 | `TOC_GENERATION_IN_PROGRESS` | 用户正 App 内生成 AI 目录，写入会被覆盖。约 1 分钟后先 GET outline |
-| 409 | `PREPARE_CANCELLED` | 同步 prepare 被并发 discard 取消。包已无，勿用其路径 |
-| 409 | `DOCUMENT_IN_USE` | 删文档时仍有卡片锚定（`details` 有卡数）。转用户去 MN 决定 |
-| 409 | `IMAGE_SOURCE_CHANGED` / `OCCLUSION_CHANGED` | 挖空指纹变了。重读重预览，不覆盖 |
-| 429 | `PREPARE_BUSY` | 已有 prepare 占管线（含刚 discard 尚在取消检查点）。**别再发**，看 `runningJob`/`retryAfterSeconds` |
-| 429 | `SCAN_BUSY` | 扫描名额满（上限 2，底层串行）。等 `retryAfterSeconds` 重发同一请求 |
-| 429 | `EXPORT_BUSY` | 已有文档/脑图导出在跑。等待 |
-| 500 | `DISCARD_FAILED` | 作业已取消但目录没删掉（离线/只读外部目录）。稍后重试或手工删 `bundleId` 目录 |
-| 504 | `SCAN_TIMEOUT` | 看门狗超时。用更小页范围重试 |
-| 400 | `INVALID_JSON` | body 非法 JSON（标题引号/反斜杠未转义常见）。修转义，与 confirm 无关 |
+| 401 | `UNAUTHORIZED` | 令牌缺失或无效。更换 token 后重试 |
+| 403 | `FORBIDDEN_ORIGIN` | 请求带了 Origin 头。去掉 Origin 头重试 |
+| 422 | `CONFIRM_REQUIRED` | 缺少 confirm，请求未执行。move、copy、delete、fold、metadata、hashtags 为真 dry-run，返回 422 与已校验的 details。其余端点只做门控，用只读端点自行核对 |
+| 422 | `HASHTAG_ROUTE_REQUIRED` | 标签写入走了 text 接口。走 `POST /notes/hashtags`，`details` 有规范示例 |
+| 422 | 其它 | 参数错误，页码越界、层级、标签路径、preset 不在白名单等。按 `details` 修正 |
+| 404 | `TOPIC_NOT_FOUND` 等 | 学习集被删或在回收站，重新选择 |
+| 409 | `SUBMIT_IN_FLIGHT` | 同一 bundle 的上一个 submit 还在运行。等待 `retryAfterSeconds` 后查 `GET /bundles`，不重发 |
+| 409 | `TITLE_MISMATCH` | 删除学习集时 `expectedTitle` 与实际值不符，真值见 `details.actualTitle` |
+| 409 | `COMMENT_CHANGED` | 评论已被修改，重新读取 batch-get 后再试 |
+| 409 | `USER_EDITS_PRESENT` | submit 或恢复时存在手动修改，确认 `changedNodes` 后带 `force:true` 重试 |
+| 409 | `STUDY_SET_IN_USE` | 回退时目标集正打开，存在闪退风险。关闭后再试 |
+| 409 | `TOC_GENERATION_IN_PROGRESS` | App 内正在生成 AI 目录，写入会被覆盖。约 1 分钟后先 GET outline |
+| 409 | `PREPARE_CANCELLED` | 并行的 prepare 被 discard 取消。包已不存在 |
+| 409 | `DOCUMENT_IN_USE` | 删除文档时仍有卡片锚定，数量见 `details`。在 MarginNote 中处理后重试 |
+| 429 | `PREPARE_BUSY` | 已有 prepare 占用管线，含刚 discard 尚在取消检查点的。查看 `runningJob` 与 `retryAfterSeconds`，不重发 |
+| 429 | `SCAN_BUSY` | 扫描并发已满，上限 2，底层串行。等待 `retryAfterSeconds` 后重发同一请求 |
+| 500 | `DISCARD_FAILED` | 作业已取消但目录未删除，离线或只读外部目录时出现。稍后重试，或手动删除 `bundleId` 目录 |
+| 504 | `SCAN_TIMEOUT` | 服务端超时。用更小页范围重试 |
+| 400 | `INVALID_JSON` | body 不是合法 JSON，常见于标题引号或反斜杠未转义。修正转义后重试，与 confirm 无关 |
 
 <Accordions>
-  <Accordion title="confirm 门清单（不带即 422 且不执行）">
-    `notes/move`、`notes/copy`、`notes/delete`、`notes/fold`、`notes/metadata`、`notes/hashtags`、`notes/{id}/image-occlusions`、`notes/{id}/title|text|comments*`、`study-sets/{id}/delete`、`study-sets/{id}/documents`、`library/study-sets`(POST)、`documents/{md5}/toc`、`snapshots/{id}/restore`。
+  <Accordion title="需要 confirm 的请求">
+    `notes/move`、`notes/copy`、`notes/delete`、`notes/fold`、`notes/metadata`、`notes/hashtags`、`notes/{id}/title|text|comments*`、`study-sets/{id}/delete`、`study-sets/{id}/documents`、`library/study-sets` POST、`documents/{md5}/toc`、`snapshots/{id}/restore`。缺少 confirm 返回 422，请求不执行。
 
-    **无此门**（发即执行）：`prepare` / `submit` / `focus` / `discard`、打快照（`study-sets/{id}/snapshots`）、`ui-state/apply`、`install/code`。别拿它们试参数；`submit` 校验用 `GET /bundles`。完整纪律见[危险端点纪律](/docs/reference/dangerous-endpoints)。
+    不需要 confirm 的请求：`prepare`、`submit`、`focus`、`discard`、打快照、`ui-state/apply`、`install/code`。校验 submit 用 `GET /bundles`。
   </Accordion>
-  <Accordion title="鉴权与订阅">
-    Bearer 是资料隐私边界；订阅是写能力门。读/搜索/渲染/导航/prepare 免 Max；创建或修改内容/持久状态需 Max。
-    运行时以 `/capabilities.routes[].requiresMax` 为准；不用 GET/POST 猜（`POST /notes/batch-get` 与 `POST /bundles/prepare` 都是免 Max 的读取面）。
-    多 Agent 同机：只动用户点名的集；`lastModifiedAt`/快照时间戳只佐证不定案，对不上号停下问。
+  <Accordion title="鉴权">
+    公开端点 `GET /`、`GET /status`、`GET /install`、`POST /pair` 外，请求在 `Authorization` 头携带 Bearer token。请求不带 Origin 头。
+    路由清单看运行时 `GET /capabilities`。
   </Accordion>
 </Accordions>
 
 <Callout type="info">
-每个端点的 `requiresMax` / `confirm` 要求见[接口总览](/docs/reference/overview)，交互式页面右上角也有标记（`x-requires-max` / `x-requires-confirm` 见 OpenAPI）。
+每个端点的 `confirm` 要求见各交互式页面的请求示例。
 </Callout>

@@ -1,47 +1,40 @@
 ---
 title: OpenAPI 说明
-description: openapi.yaml 的生成、渲染与静态托管说明
+description: openapi.yaml 的来源、渲染与 Yaak 导入
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
+import { YaakButton } from '@/components/yaak-button';
 
 # OpenAPI 说明
 
-机器可读契约：仓库根 `openapi/openapi.yaml`（OpenAPI 3.1）。
+机器可读定义在仓库根 `openapi/openapi.yaml`，OpenAPI 3.1，v0.39-draft。
 
-- 由 `raw/capabilities.json` 经 `scripts/build-openapi.py` 生成，含全部 **72 路由**（`method + path`）
-- 每个 operation 带 `x-requires-max` / `x-requires-confirm`（与总览表一致；`upload` 的 confirm 走 query `confirm=1`，其余为 JSON `confirm:true`；`false` 即无门、发即执行，见[危险端点纪律](/docs/reference/dangerous-endpoints)）
-- `GET /status` 标 `security: []`（免鉴权）；其余默认 `bearerAuth`
-- 通用 `401/403/422` 语义已写入每个 operation；`ApiError` schema 见 `components.schemas`
-- `x-bridge` 记录 `bridgeApiVersion/routeCount/apiFingerprint/guideVersion/guideHash/presets/anchorModes`
+- 由仓库 bot 从 MarginNote 源代码生成。`openapi/openapi.json` 由它经 `scripts/yaml-to-json.mjs` 转换，供构建时静态 import。
+- 静态文档与运行时冲突时用运行时，含 `apiFingerprint` 比对。
+- 部分路由只在 iOS 与 iPadOS 跨设备场景注册，见 spec 内 `x-platforms`。Mac 同机看运行时清单。
 
-## 本站如何渲染它
+## 本站渲染方式
 
-本站用 `fumadocs-openapi` 把它变成**虚拟页面**（无需落盘 MDX）：
+本站用 `fumadocs-openapi` 把它变成虚拟页面，无需落盘 MDX：
 
-- `lib/openapi.ts` 用 `createOpenAPI({ input: ['./openapi/openapi.yaml'] })` 加载；
-- `lib/source.ts` 用 `openapi.staticSource({ groupBy: 'tag' })` 按 Tag 生成 12 组页面，挂到侧边栏「交互式 API」分组；
-- `components/api-page.tsx` 用 `createOpenAPIPage()` 渲染：参数/请求体/响应 Schema、多语言代码示例、API Playground。
+- `lib/openapi.ts` 用 `createOpenAPI` 加静态 import 的 `openapi.json` 加载
+- `lib/source.ts` 用 `openapi.staticSource({ groupBy: 'tag' })` 按 Tag 生成分组页面，挂到侧边栏「交互式 API」分组
+- `components/api-page.tsx` 用 `createOpenAPIPage()` 渲染参数、请求体、响应 Schema 与多语言代码示例。Playground 已关闭
 
-## Try-it 说明
+## 在 Yaak 里调试
 
-交互页的 Playground（Try-it）是 fumadocs-openapi 原生能力：参数/请求体表单、
-auth（Bearer）输入、发送与响应展示。token 在本机浏览器 localStorage 里，
-由 fumadocs 自己存取，无需手填进文档。
+<YaakButton />
 
 <Callout type="warn">
-浏览器 fetch 自带 Origin 头会被 Bridge 直接 403，因此发送统一走同源官方代理
-（`openapi.createProxy`，见 `functions/api/bridge-proxy.ts`，allowlist 只放本机
-回环 + `/bridge/v1` 路径）。代理随 `out/` 部署到 Cloudflare Pages；
-本地用 `pnpm preview`（wrangler pages dev）联调，`pnpm dev` 无此路由。
-云上只连得到本机 Bridge（同机），跨设备照指南走局域网配对。
+spec 的 servers 只有 `/bridge/v1`，没有 host。导入后在 Yaak 里填写 base，如 `http://127.0.0.1:{port}/bridge/v1`，再填 Bearer token。
+浏览器 fetch 自带 Origin 头，Bridge 直接返回 403。调 Bridge 的请求不带 Origin。
 </Callout>
 
 ## 重新生成
 
 ```bash
-python3 scripts/build-openapi.py
+node scripts/yaml-to-json.mjs
 ```
 
-输入为 `raw/capabilities.json`，输出覆写 `openapi/openapi.yaml`。
-运行时升级后：重拉 `/capabilities` 快照 → 重跑脚本 → 重构建本站（`npm run build`），对照 `apiFingerprint`/`guideHash` 写 changelog。
+输入为 `openapi/openapi.yaml`，输出 `openapi/openapi.json`。运行时升级后更新 YAML，重跑脚本，重构建本站，`pnpm build`。

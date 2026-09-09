@@ -1,32 +1,29 @@
 ---
 title: 版本与来源
-description: 版本、来源链、保密与更新流程
+description: 版本、来源、保密、更新流程
 ---
 
-## 版本（构建快照）
+## 版本
 
-- Bridge API：`0.49`（`apiFingerprint: d351b6bc763b`，`routeCount: 72`）
-- Guide/Skill：`0.49`（`guideHash: 0dbe99b42c32db98d0bafc526176cd722c084c5a50164d05b944c5c294a787ac`）
-- App：MarginNote 4（`appVersion: 4.5.0`）
+构建快照：Bridge API `0.39-draft`，定义见 `openapi/openapi.yaml`。
 
-> 本站是构建时刻的静态快照，不是权威。连上实例后一律以运行时 `GET /status`（`guideVersion/guideHash/apiFingerprint`）与 `GET /capabilities` + `GET /guide` 为准；不一致时以运行时为准。
+本站是构建时刻的静态快照。连上实例后，路由清单与 `apiFingerprint` 看运行时 `GET /capabilities`。
 
-## 来源链（可复核，不含敏感信息）
+## 来源
 
-1. 运行时状态：`GET /status`（免鉴权 + 带鉴权各一次，确认 `authorized:true`）
-2. 运行时能力：`GET /capabilities`（72 路由 + 机器可读附录：`presets/anchorModes/accessPolicy` 等）
-3. 运行时规程：`GET /guide`（与已安装 Skill 的 `guideVersion/guideHash` 比对，不一致则以返回为准）
-4. 本地原始响应存档于 `raw/`（不提交到公开仓库，仅用于本地生成 OpenAPI 与核对指纹）
+1. MarginNote 源代码经仓库 bot 生成 `openapi/openapi.yaml`，OpenAPI 3.1
+2. `node scripts/yaml-to-json.mjs` 转出 `openapi/openapi.json`，构建时静态 import
+3. 运行时核对：`GET /status` 探活，无需鉴权。`GET /capabilities` 带 token 核对清单与指纹
 
 ## 保密
 
-- 安装码为一次性凭证，用后即废。**不要把安装码、token、原始安装响应提交到公开仓库，也不要写进 PR、commit message、issue。**
-- 本站所有示例用 `$TOKEN` / `mnb0.…` 占位，不含真实凭证。
-- 轮换：重跑一次新的「Copy Agent Setup Command」即换 token，旧 token 失效。
+- 安装码为一次性凭证，用后即废。安装码、token、原始安装响应不提交到公开仓库，不写进 PR、commit message、issue。
+- 本站示例用 `$TOKEN` 占位，不含真实凭证。
+- 轮换方式：重新执行一次「Copy Agent Setup Command」，旧 token 失效。
 
 ## 更新流程
 
-1. 重拉 `GET /status`，比对 `guideVersion`/`guideHash`/`apiFingerprint`
-2. 不一致 → 带现有 token 重拉 `GET /guide` + `GET /capabilities`（只读刷新，不调安装接口、不轮换 token、不覆写磁盘 Skill 文件）
-3. `npm run openapi:build` 重生成 `openapi/openapi.yaml`
-4. 按 `routeCount` 差补参考页，`npm run build` 验证
+1. 重拉 `GET /status`，比对版本与 `apiFingerprint`
+2. 不一致时带现有 token 重拉 `GET /capabilities`，只读刷新
+3. `node scripts/yaml-to-json.mjs` 重生成 `openapi/openapi.json`
+4. 按 `routeCount` 变化核对指南，`pnpm build` 验证

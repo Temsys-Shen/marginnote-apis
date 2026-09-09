@@ -18,7 +18,7 @@ const docs = defineDocs({
   },
 });
 
-// 手写 MDX（guides / reference / contract）+ OpenAPI 虚拟页面（groupBy tag）合并为同一 source
+// 手写 MDX（指南与规范）加 OpenAPI 虚拟页面（groupBy tag）合并为同一 source
 export const source = loader(
   {
     docs: docs.toFumadocsSource(),

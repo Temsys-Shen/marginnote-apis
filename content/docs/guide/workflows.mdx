@@ -1,6 +1,6 @@
 ---
 title: 标准工作流
-description: 拆书 prepare/submit、目录、整理、复习卡组的顺序与纪律
+description: 拆书、目录、整理、复习卡组
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -8,13 +8,15 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 # 标准工作流
 
-> 参数级细节见各参考页与交互式 API；这里只保留跨端点的顺序与纪律。
+参数见交互式 API。这里记录跨端点的顺序。
 
-## 拆书（prepare → 拆 → submit → focus）
+## 拆书
 
 <Steps>
   <Step>
-    ### 选集与文档（只读）
+    ### 选集与文档
+
+    只读。
 
     ```bash
     curl -s "$BASE/library/study-sets?query=高数" -H "$AUTH"
@@ -22,10 +24,12 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
     curl -s "$BASE/documents/{bookmd5}/outline" -H "$AUTH"
     ```
 
-    outline 字段是 **segments**；`hasToc=false` 或目录粗/失准 → 先判「要不要写目录」。
+    outline 的目录字段为 segments。`hasToc` 为 false 或目录不准时，先判断是否需要写目录。
   </Step>
   <Step>
-    ### 准备任务包（＞~10 页一律 `async:true`；一次只跑一个 prepare）
+    ### 准备任务包
+
+    超过约 10 页时 `async` 设为 true。同一时间只跑一个 prepare。
 
     ```bash
     curl -s -X POST "$BASE/bundles/prepare" -H "$AUTH" -H 'Content-Type: application/json' -d '{
@@ -34,80 +38,87 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
       "preset":"book-breakdown","anchorMode":"page_text",
       "title":"拆第三章，术语保留英文",
       "cardStyle":{"defaultFillIndex":2},"async":true}'
-    # → 202 {jobId,bundleId,bundlePath,state:"preparing"}；参数错同步回 404/422
-    curl -s "$BASE/bundles?origin=bridge" -H "$AUTH"   # 约 15s 轮询
     ```
 
-    `prepared` 进下一步；`failed` 读 error；放弃则 discard。
+    202 返回 `jobId`、`bundleId`、`bundlePath`，`state` 为 preparing。参数错误同步返回 404 或 422。
+
+    ```bash
+    curl -s "$BASE/bundles?origin=bridge" -H "$AUTH"
+    ```
+
+    每 15 秒轮询一次。`prepared` 进入下一步，`failed` 读 error，放弃时 discard。
   </Step>
   <Step>
     ### 包内拆书
-    在 `bundlePath` 内按 `CLAUDE.md` / `TASK.md` / `OUTPUT-CONTRACT.md` 拆，结果写 `result.md`（markdown_outline，≤6 级标题）。跨设备经 `GET /bundles/{id}/files` 读包、`submit` 时内联 `resultMarkdown` 交回。
+    在 `bundlePath` 内按 `CLAUDE.md`、`TASK.md`、`OUTPUT-CONTRACT.md` 拆，结果写 `result.md`。标题不超过 6 级。跨设备时经 `GET /bundles/{id}/files` 读包，submit 时内联 `resultMarkdown` 交回。
   </Step>
   <Step>
-    ### 交回导入（唯一写入，等价 commit）
+    ### 交回导入
+
+    submit 是唯一的写入操作，等价于 commit。
 
     ```bash
     curl -s -X POST "$BASE/bundles/{bundleId}/submit" -H "$AUTH" \
       -H 'Content-Type: application/json' -d '{"targetParentNoteId":"<可选>"}'
-    # → {rootNoteId, version, preImportSnapshotId, receipt, parsed, warnings}
     ```
 
-    无 confirm 门，发即 commit（见[危险端点纪律](/docs/reference/dangerous-endpoints)）。提交前复述「哪章、多少卡、进哪个集」；别拿 submit 试参数，校验用 `GET /bundles`。
+    返回 `rootNoteId`、`version`、`preImportSnapshotId`、`receipt`、`parsed`、`warnings`。
+
+    submit 没有 confirm，直接执行。提交前核对章节、卡片数、目标学习集。校验 bundle 用 `GET /bundles`。
   </Step>
   <Step>
     ### 聚焦结果
-    `curl -s -X POST "$BASE/bundles/{bundleId}/focus" -H "$AUTH"`，事后 `GET /context` 对账。
+    `curl -s -X POST "$BASE/bundles/{bundleId}/focus" -H "$AUTH"`，之后用 `GET /context` 确认。
   </Step>
 </Steps>
 
-纪律：每次 prepare ≤60 页（按实际页数）；整书按章多轮；修订环为改 result.md 后重 submit（整树替换）；导错用 `preImportSnapshotId` 经 `POST /snapshots/{id}/restore` 回退。
+每次 prepare 不超过 60 页，按实际页数计算。整书按章多轮。修订时修改 result.md 后重新 submit，整树替换。导错时用 `preImportSnapshotId` 经 `POST /snapshots/{id}/restore` 回退。
 
-### preset × anchorMode（选错静默退化，不报错）
+### preset 与 anchorMode
 
-- 叙述体：`book-breakdown` × `page_text`
-- 条文/手册：`source-structure` × 任意
-- 试卷/习题：`exam-general` × `block`（题答配对靠块 `role`；配 `page_text` 则白选 preset）
-- 词典：`dictionary` × `page_text`
+组合错误时静默退化，不报错。
 
-`startPage/endPage` 与 `/pages` 的 start/end、`outline` 的 startPage 同为 **PDF 页序**（第一页=1），不是印刷页码。segments 可非连续（0.18+），60 页按实际页数算。
+- 叙述体：`book-breakdown` 配 `page_text`
+- 条文或手册：`source-structure` 配任意 anchorMode
+- 试卷或习题：`exam-general` 配 `block`。题答配对依赖块的 role，配 `page_text` 等于没选 preset
+- 词典：`dictionary` 配 `page_text`
+
+`startPage`、`endPage` 与 `/pages` 的 start、end、`outline` 的 startPage 同为 PDF 页序，从 1 开始计数，与印刷页码无关。segments 可非连续。
 
 <Callout type="warn">
-### submit 回执必对
+### submit 回执
 
-- `parsed.headings ≠ parsed.importedCards` = 丢卡（用 receipt 与 result.md 做差集）
-- `parsed.excerptsTotal ≠ excerptsAnchored` = 有 `[excerpt:]` 未定位（看 `failedExcerpts[]`：`no_match`/`below_threshold` 多为改写原文；`no_coordinates` 多为扫描页无文本层）
-- `excerptStatsTruncated:true` 时统计不可作完整性依据
-- `exam-general`×`block` 下答案卡标题/正文会被改写（静默成功），submit 后对 receipt 的 title，须保留的用 `POST /notes/{id}/title` 补回
+- `parsed.headings` 与 `parsed.importedCards` 不等表示丢卡，用 receipt 与 result.md 做差集
+- `parsed.excerptsTotal` 与 `excerptsAnchored` 不等表示有 `[excerpt:]` 未定位，看 `failedExcerpts`。`no_match` 与 `below_threshold` 多为改写原文，`no_coordinates` 多为扫描页无文本层
+- `excerptStatsTruncated` 为 true 时统计不作完整性依据
+- `exam-general` 配 `block` 时答案卡标题与正文会被改写。submit 后核对 receipt 的 title，需要保留的使用 `POST /notes/{id}/title` 补回
 </Callout>
 
-## 目录（要不要写 → 生成/升级 → 写 → 验证）
+## 目录
 
-- 只拆一两章 → **不写目录**（读印刷目录页算偏移，回读正文定章界，零副作用）
-- 用户明确要目录或整书多轮需稳定骨架 → 走生成/升级，且先告知「改文档、多集可见」，获同意后带 `confirm:true` 写
-- `toc-candidates` ≤60 页/次、约 3s/页、45s 预算（超限按 `nextStart` 续扫）；并发上限 2（与 pages 共享），超限 429 `SCAN_BUSY`
-- 写 `POST /documents/{md5}/toc` 页码须递增、`level` 0–7（越级静默钳，看 `adjustedLevels`）；落 AI 目录位，原目录无损
-- 回退唯一口：`{"useOriginal":true,"confirm":true}` 切回原始；`{"useAI":true}` 切回 AI。**快照救不了目录**
-- 写后 `GET /outline` 复读验证（hasToc:true）
+- 只拆一两章时不写目录。读印刷目录页计算偏移，回读正文确定章界。
+- 需要目录或整书多轮需要稳定骨架时走生成或升级。写入前说明改文档且多集可见，确认后带 `confirm:true` 写入。
+- `toc-candidates` 单次不超过 60 页，约 3 秒每页，45 秒预算。超限按 `nextStart` 续扫。并发上限 2，与 pages 共享，超限返回 429 `SCAN_BUSY`。
+- 写 `POST /documents/{md5}/toc` 时页码递增，`level` 取 0 到 7。越级会被静默钳制，看 `adjustedLevels`。写入落到 AI 目录位，原目录无损。
+- 回退方式：`{"useOriginal":true,"confirm":true}` 切回原始，`{"useAI":true,"confirm":true}` 切回 AI。快照不覆盖目录。
+- 写入后用 `GET /outline` 验证，`hasToc` 为 true。
 
 ## 整理与修订
 
-- 读旧图：`tree` + `batch-get`（`texts` 稀疏、`parts` 为全量视觉顺序；`texts` 空先看 `parts`）
-- 整理 = 生成新图（prepare/submit，旧图不动）；引用旧卡写 `marginnote4app://note/{noteid}` 链接文本
-- 移动：`POST /notes/move`（≤50/次，整批一撤销组；先展示逐卡方案获同意；只改父子，不调兄弟顺序/坐标）
-- 复制：`POST /notes/copy`（`reference` 同步内容 / `clone` 独立；整棵分支快照；≤50 根）
-- 合并：`POST /notes/{id}/merge-branch`（默认直接子卡，`recursive:true` 整 subtree；先 dry-run 念 willMerge；这是合并不是链接）
-- 子脑图：`sub-maps` 列、`tree?root=` 读、`fold-into-sub-map` 折/展（须有子节点）
-- 折叠：`POST /notes/fold`（≤200，最轻写动词；叶子 skip）
-- 删除卡：`POST /notes/delete`（≤50，同集；只删点名卡，子卡接祖父或升顶层；先打快照 + 展示子卡去向；看 `outcome` deleted/hidden）
-- 删集：`POST /study-sets/{id}/delete`（`expectedTitle` 须完全一致；默认隐藏+保留划线+自动快照；`preDeleteSnapshotId` 为后悔药）
-- 评论/标题/正文：`comments` 追加（整条 note URL 成真双链）、`comments/{index}` 改/删（index 1..N + expectedPrefix）、`title`/`text` 改（expectedPrefix；摘录卡改文须告知脱钩后果）
-- hashtag：读 `batch-get.hashtags` / 集 `study-sets/{id}/hashtags`；写 `POST /notes/hashtags`（完整叶路径；remove 默认精确；replace 空数组=清空须同意；写完回读）
-- 样式：`POST /notes/metadata`（colorIndex 0..15 / fillIndex -1..2；先读 note-palette；`persisted:true` 才成功）
-- 图片挖空：`POST /notes/{id}/image-occlusions`（先读 batch-get + 底图出候选并预览；dry-run + 双指纹缺一不可；`persisted:true` 才成功；已有复习卡不自动改写）
-- 复习卡组：`decks` 建/列、`decks/{id}/cards` 加/列（`sourceNoteId` 必填；`question` 与 `questionContentId` 互斥；`{{挖空}}` 写 question；重复加为更新；删单卡用 `/notes/delete`，删整组用 `/study-sets/{deckId}/delete` + `keepHighlights:false` 才干净）
-- 快照：批量写前打点；复用（created:false）仍可作基线；回退须展示版本获同意（`STUDY_SET_IN_USE` 时切走再试）
-- 文档进出：`upload`（字节+query，`confirm=1`，看 `addedToStudySet`/`warnings`）、`study-sets/{id}/documents` 加（看 `becameMainDocument`）、`study-sets/{id}/documents/{id}/delete` 移除（先 dry-run 看 notesLosingSource + 存 preRemoveSnapshotId）、`library/documents/{id}/delete` 删（仅干净撤销，否则 409）
-- 导航：`notes/{id}/focus`、`study-sets/{id}/open`、`decks/{id}/open`（无 confirm，会抢屏，仅用户要求时用；异步，事后 `/context` 对账）；读侧用 `GET /context`
-- 导出：文档 `POST /documents/{id}/export`（`topicid` 必填 + 真实 PDF 页；留白隐式带上；`EXPORT_BUSY` 等待）、脑图 `mindmap-print/preview`（拿计划给用户看）→ `mindmap-print/export`（传保存的 plan 执行）
-- 界面：`GET /ui-state` / `POST /ui-state/apply`（差量补丁；异步 queued，~2s 后 GET 对账；`theme`/`panelratio` 写全局，`immersive` 脏同步，`researchurl` 加载任意 URL）
+- 读取已有脑图：`tree` 加 `batch-get`。`texts` 稀疏，`parts` 为全量视觉顺序。`texts` 为空时先看 `parts`。
+- 整理时生成新图，prepare 加 submit，原图不动。引用旧卡时写 `marginnote4app://note/{noteid}` 链接文本。
+- 移动：`POST /notes/move`。单次不超过 50 个，整批一个撤销组。确认逐卡方案后执行。只改父子关系，不调兄弟顺序与坐标。
+- 复制：`POST /notes/copy`。`reference` 同步内容，`clone` 独立。整棵分支快照，不超过 50 个根。
+- 合并：`POST /notes/{id}/merge-branch`。默认合并直接子卡，`recursive:true` 合并整棵子树。先 dry-run 查看 willMerge。合并后对方消失，与链接不同。
+- 子脑图：`sub-maps` 列出，`tree?root=` 读取，`fold-into-sub-map` 折叠或展回。折叠需要子节点。
+- 折叠：`POST /notes/fold`。单次不超过 200 个，开销最小的写入。叶子节点跳过。
+- 删除卡：`POST /notes/delete`。单次不超过 50 个，同集。只删点名卡，子卡接到祖父或升为顶层。先打快照，确认子卡去向。`outcome` 为 deleted 表示删除，为 hidden 表示隐藏。
+- 删集：`POST /study-sets/{id}/delete`。`expectedTitle` 与库中值完全一致。默认隐藏卡片、保留划线、自动打快照。`preDeleteSnapshotId` 用于回退。
+- 评论、标题、正文：`comments` 追加，整条 note URL 形成双向链接。`comments/{index}` 改写或删除，index 取 1 到 N，附 expectedPrefix。`title` 与 `text` 改写附 expectedPrefix。摘录卡改文会导致文字与原文脱钩，提前说明。
+- hashtag：读 `batch-get.hashtags` 或集的 `study-sets/{id}/hashtags`。写 `POST /notes/hashtags`，使用完整叶路径。remove 默认精确匹配，replace 空数组表示清空，确认后执行。写完回读。
+- 样式：`POST /notes/metadata`。`colorIndex` 取 0 到 15，`fillIndex` 取 -1 到 2。先读 note-palette。
+- 复习卡组：`decks` 新建与列出，`decks/{id}/cards` 新增与列出。`sourceNoteId` 必填。`question` 与 `questionContentId` 互斥。挖空写在 question。重复新增为更新。删单卡用 `/notes/delete`。删整组用 `/study-sets/{deckId}/delete`，`keepHighlights` 为 false 时删干净。
+- 快照：批量写前打快照。复用时返回 `created:false`，仍可作基线。回退前确认版本。目标集打开时返回 `STUDY_SET_IN_USE`，关闭后再试。
+- 文档进出：`upload` 以字节加 query 方式上传，`confirm=1`，看 `addedToStudySet` 与 `warnings`。`study-sets/{id}/documents` 新增看 `becameMainDocument`。`study-sets/{id}/documents/{id}/delete` 移除前先 dry-run 查看 notesLosingSource，并保存 preRemoveSnapshotId。`library/documents/{id}/delete` 仅干净撤销，否则返回 409。
+- 导航：`notes/{id}/focus`、`study-sets/{id}/open`、`decks/{id}/open`。没有 confirm。跳转抢占屏幕，异步执行，之后用 `GET /context` 确认。读取当前状态用 `GET /context`。
+- 界面：`GET /ui-state` 读取，`POST /ui-state/apply` 写入差量补丁。异步执行，queued 为 true 表示已提交，约 2 秒后用 `GET /ui-state` 确认。

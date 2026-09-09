@@ -3,20 +3,17 @@
   "pages": [
     "index",
     "guide",
-    "reference",
     "---交互式 API---",
-    "...system",
+    "...status",
     "...setup",
     "...library",
-    "...studysets",
+    "...study-sets",
     "...documents",
     "...notes",
     "...decks",
     "...bundles",
-    "...snapshots",
-    "...search",
-    "...sync",
-    "...uistate",
+    "...ui",
+    "...mcp",
     "contract"
   ]
 }
