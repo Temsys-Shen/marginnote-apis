@@ -7,15 +7,6 @@ export function baseOptions(): BaseLayoutProps {
       title: appName,
     },
     links: [
-      {
-        text: '接口文档',
-        url: '/docs',
-        active: 'nested-url',
-      },
-      {
-        text: 'LLMs',
-        url: '/llms.txt',
-      },
     ],
   };
 }
