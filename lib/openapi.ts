@@ -1,17 +1,22 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createOpenAPI } from 'fumadocs-openapi/server';
 import type { Document } from 'fumadocs-openapi';
-import spec from '../openapi/openapi.json';
+import { parse } from 'yaml';
 
 /**
- * OpenAPI 数据源为 `openapi/openapi.json`，由 openapi.yaml 转换而来，
- * 见 scripts/yaml-to-json.mjs。openapi.yaml 由仓库 bot 从 MarginNote
- * 源代码生成。
+ * OpenAPI 唯一数据源为 `openapi/openapi.yaml`（仓库 bot 从 MarginNote
+ * 源代码生成）。构建期（Node）同步读入并解析为对象后传给 createOpenAPI。
  *
- * 用静态 import 加函数式 input，把 spec 打进构建产物。传文件路径字符串时，
- * fumadocs-openapi 会在运行时读文件系统，纯静态托管下没有可读的 fs。
+ * staticSource() 只在 `next build` 期间执行，读 fs 合法；运行时消费的是
+ * 已生成的虚拟页面数据，纯静态托管下无 fs 依赖。
  *
  * 调试走 Yaak 一键导入，见 components/yaak-button.tsx。
  */
+const spec = parse(
+  readFileSync(join(process.cwd(), 'openapi', 'openapi.yaml'), 'utf8'),
+) as unknown as Document;
+
 export const openapi = createOpenAPI({
-  input: { bridge: () => spec as unknown as Document },
+  input: { bridge: () => spec },
 });

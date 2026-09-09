@@ -9,7 +9,6 @@
     "build": "next build",
     "start": "next start",
     "types:check": "tsc --noEmit",
-    "openapi:build": "node scripts/yaml-to-json.mjs",
     "preview": "wrangler pages dev out",
     "deploy:pages": "next build && wrangler pages deploy out --project-name=mnapis"
   },

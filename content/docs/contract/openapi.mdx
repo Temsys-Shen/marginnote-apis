@@ -10,7 +10,7 @@ import { YaakButton } from '@/components/yaak-button';
 
 机器可读定义在仓库根 `openapi/openapi.yaml`，OpenAPI 3.1，v0.39-draft。
 
-- 由仓库 bot 从 MarginNote 源代码生成。`openapi/openapi.json` 由它经 `scripts/yaml-to-json.mjs` 转换，供构建时静态 import。
+- 由仓库 bot 从 MarginNote 源代码生成，是唯一数据源，构建期由 `lib/openapi.ts` 直读解析。
 - 静态文档与运行时冲突时用运行时，含 `apiFingerprint` 比对。
 - 部分路由只在 iOS 与 iPadOS 跨设备场景注册，见 spec 内 `x-platforms`。Mac 同机看运行时清单。
 
@@ -18,7 +18,7 @@ import { YaakButton } from '@/components/yaak-button';
 
 本站用 `fumadocs-openapi` 把它变成虚拟页面，无需落盘 MDX：
 
-- `lib/openapi.ts` 用 `createOpenAPI` 加静态 import 的 `openapi.json` 加载
+- `lib/openapi.ts` 用 `createOpenAPI` 加构建期直读解析的 `openapi.yaml` 加载
 - `lib/source.ts` 用 `openapi.staticSource({ groupBy: 'tag' })` 按 Tag 生成分组页面，挂到侧边栏「交互式 API」分组
 - `components/api-page.tsx` 用 `createOpenAPIPage()` 渲染参数、请求体、响应 Schema 与多语言代码示例。Playground 已关闭
 
@@ -33,8 +33,4 @@ spec 的 servers 只有 `/bridge/v1`，没有 host。导入后在 Yaak 里填写
 
 ## 重新生成
 
-```bash
-node scripts/yaml-to-json.mjs
-```
-
-输入为 `openapi/openapi.yaml`，输出 `openapi/openapi.json`。运行时升级后更新 YAML，重跑脚本，重构建本站，`pnpm build`。
+运行时升级后直接更新 `openapi/openapi.yaml`，然后重构建本站，`pnpm build`，无需中间转换步骤。

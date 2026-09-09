@@ -45,5 +45,4 @@ curl -s http://127.0.0.1:42340/bridge/v1/capabilities -H "Authorization: Bearer 
 
 ## 来源
 
-- `openapi/openapi.yaml`：仓库 bot 从 MarginNote 源代码生成的 OpenAPI 3.1。本站交互式参考由它渲染。
-- `openapi/openapi.json`：由 `openapi.yaml` 经 `scripts/yaml-to-json.mjs` 转换，供构建时静态 import。
+- `openapi/openapi.yaml`：仓库 bot 从 MarginNote 源代码生成的 OpenAPI 3.1，唯一数据源。本站交互式参考由构建期直读解析它来渲染。

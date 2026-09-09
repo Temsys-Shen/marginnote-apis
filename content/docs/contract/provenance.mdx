@@ -11,8 +11,8 @@ description: 版本、来源、保密、更新流程
 
 ## 来源
 
-1. MarginNote 源代码经仓库 bot 生成 `openapi/openapi.yaml`，OpenAPI 3.1
-2. `node scripts/yaml-to-json.mjs` 转出 `openapi/openapi.json`，构建时静态 import
+1. MarginNote 源代码经仓库 bot 生成 `openapi/openapi.yaml`，OpenAPI 3.1，唯一数据源
+2. 构建期 `lib/openapi.ts` 直读解析 YAML，`pnpm build` 即生效，无中间转换步骤
 3. 运行时核对：`GET /status` 探活，无需鉴权。`GET /capabilities` 带 token 核对清单与指纹
 
 ## 保密
@@ -25,5 +25,5 @@ description: 版本、来源、保密、更新流程
 
 1. 重拉 `GET /status`，比对版本与 `apiFingerprint`
 2. 不一致时带现有 token 重拉 `GET /capabilities`，只读刷新
-3. `node scripts/yaml-to-json.mjs` 重生成 `openapi/openapi.json`
+3. 直接更新 `openapi/openapi.yaml`
 4. 按 `routeCount` 变化核对指南，`pnpm build` 验证

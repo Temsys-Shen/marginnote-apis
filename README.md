@@ -22,13 +22,10 @@ MarginNote 本地 Bridge 的 HTTP 接口文档站，Bridge API v0.39-draft。
 │   └── mdx.tsx
 ├── content/docs/          # 手写文档，指南与规范，加 meta.json 侧边栏
 ├── lib/
-│   ├── openapi.ts         # createOpenAPI，静态 import openapi.json，函数式 input
+│   ├── openapi.ts         # createOpenAPI，构建期直读解析 openapi.yaml，函数式 input
 │   └── source.ts          # loader，手写源加 staticSource groupBy tag
 ├── openapi/
-│   ├── openapi.yaml       # OpenAPI 3.1，仓库 bot 从 MarginNote 源代码生成
-│   └── openapi.json       # 同上转 JSON，构建时静态 import，见 scripts/yaml-to-json.mjs
-├── scripts/
-│   └── yaml-to-json.mjs   # openapi.yaml 转 openapi.json
+│   └── openapi.yaml       # OpenAPI 3.1，唯一数据源，仓库 bot 从 MarginNote 源代码生成
 └── raw/                   # 原始响应存档，本地保存，token 相关文件不提交
 ```
 
