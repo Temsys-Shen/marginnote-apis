@@ -83,7 +83,7 @@ tags:
     url: about:blank
 paths:
   "/":
-    summary: "/"
+    summary: 配对入口
     description: 跨设备配对根入口。仅 iOS/iPadOS 侧注册，用于给尚未持有 token 的客户端展示配对说明；Mac 同机 CLI/Bridge
       不注册。
     servers:
@@ -174,7 +174,7 @@ paths:
       x-platform-note: 仅跨设备接入场景注册；Mac Catalyst 同机 CLI/Bridge 构建不注册该路由。运行时请以 GET /capabilities
         返回的路由清单为准。
   "/bundles":
-    summary: "/bundles"
+    summary: 拆书任务包
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -188,7 +188,7 @@ paths:
       operationId: get_bundles
       tags:
       - bundles
-      summary: GET /bundles
+      summary: 列出任务包
       parameters:
       - name: limit
         in: query
@@ -304,7 +304,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/bundles/prepare":
-    summary: "/bundles/prepare"
+    summary: 拆书准备
     description: 基于文档页码或片段准备 AI 拆书 bundle。
     servers:
     - "$ref": "#/servers/0"
@@ -318,7 +318,7 @@ paths:
       operationId: post_bundles_prepare
       tags:
       - bundles
-      summary: POST /bundles/prepare
+      summary: 准备任务包
       requestBody:
         description: "/bundles/prepare 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -416,7 +416,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/bundles/{bundleId}/discard":
-    summary: "/bundles/{bundleId}/discard"
+    summary: 任务包丢弃
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -430,7 +430,7 @@ paths:
       operationId: post_bundles_by_bundleId_discard
       tags:
       - bundles
-      summary: POST /bundles/{bundleId}/discard
+      summary: 丢弃任务包
       parameters:
       - name: bundleId
         in: path
@@ -534,7 +534,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/bundles/{bundleId}/files":
-    summary: "/bundles/{bundleId}/files"
+    summary: 任务包文件
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -548,7 +548,7 @@ paths:
       operationId: get_bundles_by_bundleId_files
       tags:
       - bundles
-      summary: GET /bundles/{bundleId}/files
+      summary: 读取包内文件
       parameters:
       - name: bundleId
         in: path
@@ -677,7 +677,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/bundles/{bundleId}/focus":
-    summary: "/bundles/{bundleId}/focus"
+    summary: 任务包聚焦
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -691,7 +691,7 @@ paths:
       operationId: post_bundles_by_bundleId_focus
       tags:
       - bundles
-      summary: POST /bundles/{bundleId}/focus
+      summary: 聚焦任务包
       parameters:
       - name: bundleId
         in: path
@@ -795,7 +795,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/bundles/{bundleId}/submit":
-    summary: "/bundles/{bundleId}/submit"
+    summary: 任务包提交
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -809,7 +809,7 @@ paths:
       operationId: post_bundles_by_bundleId_submit
       tags:
       - bundles
-      summary: POST /bundles/{bundleId}/submit
+      summary: 提交任务包
       parameters:
       - name: bundleId
         in: path
@@ -913,7 +913,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/capabilities":
-    summary: "/capabilities"
+    summary: 运行时能力
     description: 返回运行时路由目录和能力元数据。客户端在信任静态 OpenAPI 前，应先比对 apiFingerprint。
     servers:
     - "$ref": "#/servers/0"
@@ -1017,7 +1017,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/context":
-    summary: "/context"
+    summary: 当前上下文
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1031,7 +1031,7 @@ paths:
       operationId: get_context
       tags:
       - ui
-      summary: GET /context
+      summary: 读取上下文
       responses:
         '200':
           description: 请求成功。
@@ -1108,7 +1108,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/decks":
-    summary: "/decks"
+    summary: 复习卡组
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1122,7 +1122,7 @@ paths:
       operationId: get_decks
       tags:
       - decks
-      summary: GET /decks
+      summary: 列出卡组
       parameters:
       - name: limit
         in: query
@@ -1241,7 +1241,7 @@ paths:
       operationId: post_decks
       tags:
       - decks
-      summary: POST /decks
+      summary: 新建卡组
       requestBody:
         description: "/decks 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -1332,7 +1332,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/decks/{deckid}/cards":
-    summary: "/decks/{deckid}/cards"
+    summary: 卡组卡片
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1346,7 +1346,7 @@ paths:
       operationId: get_decks_by_deckid_cards
       tags:
       - decks
-      summary: GET /decks/{deckid}/cards
+      summary: 列出卡组卡片
       parameters:
       - name: deckid
         in: path
@@ -1478,7 +1478,7 @@ paths:
       operationId: post_decks_by_deckid_cards
       tags:
       - decks
-      summary: POST /decks/{deckid}/cards
+      summary: 新增卡组卡片
       parameters:
       - name: deckid
         in: path
@@ -1582,7 +1582,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/decks/{deckid}/open":
-    summary: "/decks/{deckid}/open"
+    summary: 卡组打开
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1596,7 +1596,7 @@ paths:
       operationId: post_decks_by_deckid_open
       tags:
       - decks
-      summary: POST /decks/{deckid}/open
+      summary: 打开卡组
       parameters:
       - name: deckid
         in: path
@@ -1700,7 +1700,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/devices":
-    summary: "/devices"
+    summary: 已配对设备
     description: 跨设备已配对设备列表。仅 iOS/iPadOS 侧注册，返回设备标识、名称和配对时间，不返回任何令牌材料。
     servers:
     - "$ref": "#/servers/0"
@@ -1791,7 +1791,7 @@ paths:
       x-platform-note: 仅跨设备接入场景注册；Mac Catalyst 同机 CLI/Bridge 构建不注册该路由。运行时请以 GET /capabilities
         返回的路由清单为准。
   "/documents/{bookmd5}/locate":
-    summary: "/documents/{bookmd5}/locate"
+    summary: 文档定位
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1805,7 +1805,7 @@ paths:
       operationId: post_documents_by_bookmd5_locate
       tags:
       - documents
-      summary: POST /documents/{bookmd5}/locate
+      summary: 定位文档
       parameters:
       - name: bookmd5
         in: path
@@ -1909,7 +1909,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/outline":
-    summary: "/documents/{bookmd5}/outline"
+    summary: 文档目录
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -1923,7 +1923,7 @@ paths:
       operationId: get_documents_by_bookmd5_outline
       tags:
       - documents
-      summary: GET /documents/{bookmd5}/outline
+      summary: 读取目录
       parameters:
       - name: bookmd5
         in: path
@@ -2054,7 +2054,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/pages":
-    summary: "/documents/{bookmd5}/pages"
+    summary: 文档页面
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2068,7 +2068,7 @@ paths:
       operationId: get_documents_by_bookmd5_pages
       tags:
       - documents
-      summary: GET /documents/{bookmd5}/pages
+      summary: 读取页面
       parameters:
       - name: bookmd5
         in: path
@@ -2238,7 +2238,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/pages/{index}/content/{contentId}":
-    summary: "/documents/{bookmd5}/pages/{index}/content/{contentId}"
+    summary: 页面内容块
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2252,7 +2252,7 @@ paths:
       operationId: get_documents_by_bookmd5_pages_by_index_content_by_contentId
       tags:
       - documents
-      summary: GET /documents/{bookmd5}/pages/{index}/content/{contentId}
+      summary: 读取页面内容
       parameters:
       - name: bookmd5
         in: path
@@ -2409,7 +2409,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/pages/{index}/parts":
-    summary: "/documents/{bookmd5}/pages/{index}/parts"
+    summary: 页面区块
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2423,7 +2423,7 @@ paths:
       operationId: get_documents_by_bookmd5_pages_by_index_parts
       tags:
       - documents
-      summary: GET /documents/{bookmd5}/pages/{index}/parts
+      summary: 读取页面区块
       parameters:
       - name: bookmd5
         in: path
@@ -2567,7 +2567,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/toc":
-    summary: "/documents/{bookmd5}/toc"
+    summary: 文档目录写入
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2581,7 +2581,7 @@ paths:
       operationId: post_documents_by_bookmd5_toc
       tags:
       - documents
-      summary: POST /documents/{bookmd5}/toc
+      summary: 写入目录
       parameters:
       - name: bookmd5
         in: path
@@ -2685,7 +2685,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/documents/{bookmd5}/toc-candidates":
-    summary: "/documents/{bookmd5}/toc-candidates"
+    summary: 目录候选扫描
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2699,7 +2699,7 @@ paths:
       operationId: get_documents_by_bookmd5_toc_candidates
       tags:
       - documents
-      summary: GET /documents/{bookmd5}/toc-candidates
+      summary: 扫描目录候选
       parameters:
       - name: bookmd5
         in: path
@@ -2830,7 +2830,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/guide":
-    summary: "/guide"
+    summary: 运行时规程
     description: 返回当前 Bridge 内嵌的 Agent 操作规程 Markdown。
     servers:
     - "$ref": "#/servers/0"
@@ -2921,7 +2921,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/install":
-    summary: "/install"
+    summary: 安装引导
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -2935,7 +2935,7 @@ paths:
       operationId: get_install
       tags:
       - setup
-      summary: GET /install
+      summary: 读取安装引导
       security: []
       responses:
         '200':
@@ -3011,7 +3011,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/install/code":
-    summary: "/install/code"
+    summary: 安装码
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3025,7 +3025,7 @@ paths:
       operationId: post_install_code
       tags:
       - setup
-      summary: POST /install/code
+      summary: 生成安装码
       requestBody:
         description: "/install/code 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -3116,7 +3116,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/library/documents/upload":
-    summary: "/library/documents/upload"
+    summary: 文档上传
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3130,7 +3130,7 @@ paths:
       operationId: post_library_documents_upload
       tags:
       - library
-      summary: POST /library/documents/upload
+      summary: 上传文档
       requestBody:
         description: "/library/documents/upload 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -3223,7 +3223,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/library/documents/{bookmd5}/delete":
-    summary: "/library/documents/{bookmd5}/delete"
+    summary: 资料库文档删除
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3237,7 +3237,7 @@ paths:
       operationId: post_library_documents_by_bookmd5_delete
       tags:
       - library
-      summary: POST /library/documents/{bookmd5}/delete
+      summary: 删除文档
       parameters:
       - name: bookmd5
         in: path
@@ -3341,7 +3341,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/library/folders":
-    summary: "/library/folders"
+    summary: 资料库文件夹
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3355,7 +3355,7 @@ paths:
       operationId: get_library_folders
       tags:
       - library
-      summary: GET /library/folders
+      summary: 列出文件夹
       responses:
         '200':
           description: 请求成功。
@@ -3473,7 +3473,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/library/study-sets":
-    summary: "/library/study-sets"
+    summary: 资料库学习集
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3487,7 +3487,7 @@ paths:
       operationId: get_library_study_sets
       tags:
       - library
-      summary: GET /library/study-sets
+      summary: 列出学习集
       parameters:
       - name: limit
         in: query
@@ -3606,7 +3606,7 @@ paths:
       operationId: post_library_study_sets
       tags:
       - library
-      summary: POST /library/study-sets
+      summary: 新建学习集
       requestBody:
         description: "/library/study-sets 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -3697,7 +3697,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/mcp":
-    summary: "/mcp"
+    summary: MCP 接入
     description: Streamable HTTP MCP 端点。Bridge 暴露 mn_guide 和 mn_call，而不是把每个 REST 路由翻译成单独
       MCP tool。
     servers:
@@ -3712,7 +3712,7 @@ paths:
       operationId: post_mcp
       tags:
       - mcp
-      summary: POST /mcp
+      summary: 调用 MCP
       requestBody:
         description: "/mcp 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -3806,7 +3806,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/batch-get":
-    summary: "/notes/batch-get"
+    summary: 卡片批量读取
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3820,7 +3820,7 @@ paths:
       operationId: post_notes_batch_get
       tags:
       - notes
-      summary: POST /notes/batch-get
+      summary: 批量读取卡片
       requestBody:
         description: "/notes/batch-get 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -3911,7 +3911,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/copy":
-    summary: "/notes/copy"
+    summary: 卡片复制
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -3925,7 +3925,7 @@ paths:
       operationId: post_notes_copy
       tags:
       - notes
-      summary: POST /notes/copy
+      summary: 复制卡片
       requestBody:
         description: "/notes/copy 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4016,7 +4016,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/delete":
-    summary: "/notes/delete"
+    summary: 卡片删除
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4030,7 +4030,7 @@ paths:
       operationId: post_notes_delete
       tags:
       - notes
-      summary: POST /notes/delete
+      summary: 删除卡片
       requestBody:
         description: "/notes/delete 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4121,7 +4121,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/fold":
-    summary: "/notes/fold"
+    summary: 卡片折叠
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4135,7 +4135,7 @@ paths:
       operationId: post_notes_fold
       tags:
       - notes
-      summary: POST /notes/fold
+      summary: 折叠卡片
       requestBody:
         description: "/notes/fold 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4226,7 +4226,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/hashtags":
-    summary: "/notes/hashtags"
+    summary: 卡片标签
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4240,7 +4240,7 @@ paths:
       operationId: post_notes_hashtags
       tags:
       - notes
-      summary: POST /notes/hashtags
+      summary: 写入标签
       requestBody:
         description: "/notes/hashtags 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4331,7 +4331,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/metadata":
-    summary: "/notes/metadata"
+    summary: 卡片样式
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4345,7 +4345,7 @@ paths:
       operationId: post_notes_metadata
       tags:
       - notes
-      summary: POST /notes/metadata
+      summary: 改写样式
       requestBody:
         description: "/notes/metadata 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4436,7 +4436,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/move":
-    summary: "/notes/move"
+    summary: 卡片移动
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4450,7 +4450,7 @@ paths:
       operationId: post_notes_move
       tags:
       - notes
-      summary: POST /notes/move
+      summary: 移动卡片
       requestBody:
         description: "/notes/move 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -4541,7 +4541,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/comments":
-    summary: "/notes/{noteid}/comments"
+    summary: 卡片评论
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4555,7 +4555,7 @@ paths:
       operationId: post_notes_by_noteid_comments
       tags:
       - notes
-      summary: POST /notes/{noteid}/comments
+      summary: 追加评论
       parameters:
       - name: noteid
         in: path
@@ -4659,7 +4659,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/comments/{index}":
-    summary: "/notes/{noteid}/comments/{index}"
+    summary: 评论改写
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4673,7 +4673,7 @@ paths:
       operationId: post_notes_by_noteid_comments_by_index
       tags:
       - notes
-      summary: POST /notes/{noteid}/comments/{index}
+      summary: 改写评论
       parameters:
       - name: noteid
         in: path
@@ -4790,7 +4790,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/comments/{index}/delete":
-    summary: "/notes/{noteid}/comments/{index}/delete"
+    summary: 评论删除
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4804,7 +4804,7 @@ paths:
       operationId: post_notes_by_noteid_comments_by_index_delete
       tags:
       - notes
-      summary: POST /notes/{noteid}/comments/{index}/delete
+      summary: 删除评论
       parameters:
       - name: noteid
         in: path
@@ -4922,7 +4922,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/content/{contentId}":
-    summary: "/notes/{noteid}/content/{contentId}"
+    summary: 卡片内容
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -4936,7 +4936,7 @@ paths:
       operationId: get_notes_by_noteid_content_by_contentId
       tags:
       - notes
-      summary: GET /notes/{noteid}/content/{contentId}
+      summary: 读取卡片内容
       parameters:
       - name: noteid
         in: path
@@ -5039,7 +5039,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/focus":
-    summary: "/notes/{noteid}/focus"
+    summary: 卡片聚焦
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5053,7 +5053,7 @@ paths:
       operationId: post_notes_by_noteid_focus
       tags:
       - notes
-      summary: POST /notes/{noteid}/focus
+      summary: 定位卡片
       parameters:
       - name: noteid
         in: path
@@ -5157,7 +5157,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/fold-into-sub-map":
-    summary: "/notes/{noteid}/fold-into-sub-map"
+    summary: 子脑图折叠
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5171,7 +5171,7 @@ paths:
       operationId: post_notes_by_noteid_fold_into_sub_map
       tags:
       - notes
-      summary: POST /notes/{noteid}/fold-into-sub-map
+      summary: 收进子脑图
       parameters:
       - name: noteid
         in: path
@@ -5275,7 +5275,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/merge-branch":
-    summary: "/notes/{noteid}/merge-branch"
+    summary: 分支合并
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5289,7 +5289,7 @@ paths:
       operationId: post_notes_by_noteid_merge_branch
       tags:
       - notes
-      summary: POST /notes/{noteid}/merge-branch
+      summary: 合并分支
       parameters:
       - name: noteid
         in: path
@@ -5393,7 +5393,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/render":
-    summary: "/notes/{noteid}/render"
+    summary: 卡片渲染
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5407,7 +5407,7 @@ paths:
       operationId: get_notes_by_noteid_render
       tags:
       - notes
-      summary: GET /notes/{noteid}/render
+      summary: 渲染卡片
       parameters:
       - name: noteid
         in: path
@@ -5497,7 +5497,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/text":
-    summary: "/notes/{noteid}/text"
+    summary: 卡片正文
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5511,7 +5511,7 @@ paths:
       operationId: post_notes_by_noteid_text
       tags:
       - notes
-      summary: POST /notes/{noteid}/text
+      summary: 改写正文
       parameters:
       - name: noteid
         in: path
@@ -5615,7 +5615,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/notes/{noteid}/title":
-    summary: "/notes/{noteid}/title"
+    summary: 卡片标题
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5629,7 +5629,7 @@ paths:
       operationId: post_notes_by_noteid_title
       tags:
       - notes
-      summary: POST /notes/{noteid}/title
+      summary: 改写标题
       parameters:
       - name: noteid
         in: path
@@ -5733,7 +5733,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/pair":
-    summary: "/pair"
+    summary: 跨设备配对
     description: 跨设备配对接口。仅 iOS/iPadOS 侧注册，用 6 位配对码换取后续请求使用的 Bearer token。
     servers:
     - "$ref": "#/servers/0"
@@ -5837,7 +5837,7 @@ paths:
       x-platform-note: 仅跨设备接入场景注册；Mac Catalyst 同机 CLI/Bridge 构建不注册该路由。运行时请以 GET /capabilities
         返回的路由清单为准。
   "/search":
-    summary: "/search"
+    summary: 全局搜索
     description: 搜索学习集、卡片和文档。不要假设存在完整文档列表接口，找书优先使用该接口。
     servers:
     - "$ref": "#/servers/0"
@@ -5851,7 +5851,7 @@ paths:
       operationId: get_search
       tags:
       - status
-      summary: GET /search
+      summary: 搜索
       parameters:
       - name: q
         in: query
@@ -5993,7 +5993,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/snapshots/{snapshotId}/restore":
-    summary: "/snapshots/{snapshotId}/restore"
+    summary: 快照回退
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6007,7 +6007,7 @@ paths:
       operationId: post_snapshots_by_snapshotId_restore
       tags:
       - study-sets
-      summary: POST /snapshots/{snapshotId}/restore
+      summary: 回退快照
       parameters:
       - name: snapshotId
         in: path
@@ -6111,7 +6111,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/status":
-    summary: "/status"
+    summary: Bridge 状态
     description: 读取 Bridge 状态、授权状态、路由数量和 API 指纹。该路由故意不要求鉴权，用于本地发现和陈旧文档检测。
     servers:
     - "$ref": "#/servers/0"
@@ -6206,7 +6206,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/delete":
-    summary: "/study-sets/{topicid}/delete"
+    summary: 学习集删除
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6220,7 +6220,7 @@ paths:
       operationId: post_study_sets_by_topicid_delete
       tags:
       - study-sets
-      summary: POST /study-sets/{topicid}/delete
+      summary: 删除学习集
       parameters:
       - name: topicid
         in: path
@@ -6324,7 +6324,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/documents":
-    summary: "/study-sets/{topicid}/documents"
+    summary: 学习集文档
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6338,7 +6338,7 @@ paths:
       operationId: get_study_sets_by_topicid_documents
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/documents
+      summary: 列出集内文档
       parameters:
       - name: topicid
         in: path
@@ -6470,7 +6470,7 @@ paths:
       operationId: post_study_sets_by_topicid_documents
       tags:
       - study-sets
-      summary: POST /study-sets/{topicid}/documents
+      summary: 添加文档
       parameters:
       - name: topicid
         in: path
@@ -6574,7 +6574,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/documents/{bookmd5}/delete":
-    summary: "/study-sets/{topicid}/documents/{bookmd5}/delete"
+    summary: 文档移除
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6588,7 +6588,7 @@ paths:
       operationId: post_study_sets_by_topicid_documents_by_bookmd5_delete
       tags:
       - study-sets
-      summary: POST /study-sets/{topicid}/documents/{bookmd5}/delete
+      summary: 移除文档
       parameters:
       - name: topicid
         in: path
@@ -6706,7 +6706,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/hashtags":
-    summary: "/study-sets/{topicid}/hashtags"
+    summary: 学习集标签
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6720,7 +6720,7 @@ paths:
       operationId: get_study_sets_by_topicid_hashtags
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/hashtags
+      summary: 列出集内标签
       parameters:
       - name: topicid
         in: path
@@ -6851,7 +6851,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/note-palette":
-    summary: "/study-sets/{topicid}/note-palette"
+    summary: 卡片调色板
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -6865,7 +6865,7 @@ paths:
       operationId: get_study_sets_by_topicid_note_palette
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/note-palette
+      summary: 读取调色板
       parameters:
       - name: topicid
         in: path
@@ -6996,7 +6996,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/notebooks":
-    summary: "/study-sets/{topicid}/notebooks"
+    summary: 学习集脑图
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7010,7 +7010,7 @@ paths:
       operationId: get_study_sets_by_topicid_notebooks
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/notebooks
+      summary: 列出脑图
       parameters:
       - name: topicid
         in: path
@@ -7141,7 +7141,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/open":
-    summary: "/study-sets/{topicid}/open"
+    summary: 学习集打开
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7155,7 +7155,7 @@ paths:
       operationId: post_study_sets_by_topicid_open
       tags:
       - study-sets
-      summary: POST /study-sets/{topicid}/open
+      summary: 打开学习集
       parameters:
       - name: topicid
         in: path
@@ -7259,7 +7259,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/snapshots":
-    summary: "/study-sets/{topicid}/snapshots"
+    summary: 学习集快照
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7273,7 +7273,7 @@ paths:
       operationId: get_study_sets_by_topicid_snapshots
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/snapshots
+      summary: 列出快照
       parameters:
       - name: topicid
         in: path
@@ -7407,7 +7407,7 @@ paths:
       operationId: post_study_sets_by_topicid_snapshots
       tags:
       - study-sets
-      summary: POST /study-sets/{topicid}/snapshots
+      summary: 创建快照
       parameters:
       - name: topicid
         in: path
@@ -7511,7 +7511,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/sub-maps":
-    summary: "/study-sets/{topicid}/sub-maps"
+    summary: 子脑图
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7525,7 +7525,7 @@ paths:
       operationId: get_study_sets_by_topicid_sub_maps
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/sub-maps
+      summary: 列出子脑图
       parameters:
       - name: topicid
         in: path
@@ -7656,7 +7656,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/study-sets/{topicid}/tree":
-    summary: "/study-sets/{topicid}/tree"
+    summary: 脑图树
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7670,7 +7670,7 @@ paths:
       operationId: get_study_sets_by_topicid_tree
       tags:
       - study-sets
-      summary: GET /study-sets/{topicid}/tree
+      summary: 读取脑图树
       parameters:
       - name: topicid
         in: path
@@ -7827,7 +7827,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/ui-state":
-    summary: "/ui-state"
+    summary: 界面状态
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7841,7 +7841,7 @@ paths:
       operationId: get_ui_state
       tags:
       - ui
-      summary: GET /ui-state
+      summary: 读取界面状态
       responses:
         '200':
           description: 请求成功。
@@ -7918,7 +7918,7 @@ paths:
       - iPadOS
       x-platform-note: 通用 Local Bridge 路由；具体可用性仍以运行时 GET /capabilities 为准。
   "/ui-state/apply":
-    summary: "/ui-state/apply"
+    summary: 界面状态应用
     description: 根据当前 MarginNote Local Bridge 路由目录生成的接口。
     servers:
     - "$ref": "#/servers/0"
@@ -7932,7 +7932,7 @@ paths:
       operationId: post_ui_state_apply
       tags:
       - ui
-      summary: POST /ui-state/apply
+      summary: 应用界面补丁
       requestBody:
         description: "/ui-state/apply 的请求体。端点特有字段尽量从已冻结 CLI 契约推断；除非端点另有严格校验说明，运行时可能忽略未知请求字段。"
         required: false
@@ -8659,7 +8659,7 @@ components:
   securitySchemes:
     bearerAuth:
       type: http
-      description: 本地配对 token。不要写入日志、截图或生成客户端的调试输出。
+      description: 认证token。复制链接时`code`的值。
       scheme: bearer
       bearerFormat: MN bridge local token
     apiKeyHeaderAuth:
