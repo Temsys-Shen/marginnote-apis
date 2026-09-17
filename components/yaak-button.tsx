@@ -1,5 +1,5 @@
 /**
- * Yaak 一键导入按钮，全站复用。URL 各页不再手拼。
+ * Yaak 一键导入按钮，全站复用。URL 由 getYaakRunUrl() 统一生成。
  *
  * 官方格式见 https://yaak.app/button/new：
  *   run 链接为 `https://yaak.app/button/run?name=<name>&url=<dataUrl>`
@@ -8,7 +8,7 @@
  * Data URL 指向本仓库的 OpenAPI，push 到 main 后生效。Yaak 原生支持
  * OpenAPI 3.1 YAML 与 JSON，按 Tag 建文件夹。
  *
- * spec 的 servers 只有 `/bridge/v1`，没有 host。导入后在 Yaak 里填写
+ * spec 的 servers 为相对路径 `/bridge/v1`。导入后在 Yaak 里填写
  * base，如 `http://127.0.0.1:{port}/bridge/v1`，再填 Bearer token。
  */
 

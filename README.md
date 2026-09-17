@@ -15,7 +15,7 @@ MarginNote 本地 Bridge 的 HTTP 接口文档站，Bridge API v0.39-draft。
 │   ├── docs/[[...slug]]/  # 文档页，手写 MDX 与 OpenAPI 虚拟页分支渲染
 │   └── api/search/        # 站内搜索，构建时导出静态索引
 ├── components/
-│   ├── api-page.tsx       # createOpenAPIPage，Schema 与示例，Playground 已关闭
+│   ├── api-page.tsx       # createOpenAPIPage，Schema 与示例
 │   ├── yaak-button.tsx    # Yaak 一键导入按钮，全站复用同一组件
 │   ├── search-dialog.tsx  # 静态搜索对话框，staticClient
 │   └── mdx.tsx
@@ -67,7 +67,7 @@ curl -s http://127.0.0.1:42340/bridge/v1/capabilities -H "Authorization: Bearer 
 
 ## 用到的 Fumadocs 特性
 
-- fumadocs-openapi：`createOpenAPI` 加 `staticSource({ groupBy: 'tag' })` 虚拟页面，`createOpenAPIPage` 渲染参数与响应 Schema 加多语言代码示例，Playground 已关闭，侧边栏方法徽标走 loader plugin，样式 `fumadocs-openapi/css/preset.css`
+- fumadocs-openapi：`createOpenAPI` 加 `staticSource({ groupBy: 'tag' })` 虚拟页面，`createOpenAPIPage` 渲染参数与响应 Schema 加多语言代码示例，侧边栏方法徽标走 loader plugin，样式 `fumadocs-openapi/css/preset.css`
 - 搜索：构建时静态导出索引加客户端 `staticClient`，全文加面包屑加高亮，纯静态运行
 - MDX 组件：Cards 加 Card，Tabs 加 Tab，Steps 加 Step，Callout，Accordion
 - Yaak 导入：`components/yaak-button.tsx` 单一来源，官方 `yaak.app/button/run` 格式，落地页、文档索引、全部 API 页复用同一组件

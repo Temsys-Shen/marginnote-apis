@@ -17,12 +17,12 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  // fumadocs-openapi 虚拟页面：交互式 API 参考。Playground 已关闭，调试走 Yaak
+  // fumadocs-openapi 虚拟页面：交互式 API 参考。
+  // 描述由 APIPage 内部按 OpenAPI 字段渲染。
   if (page.type === 'openapi') {
     return (
       <DocsPage toc={page.data.toc} full>
         <DocsTitle>{page.data.title}</DocsTitle>
-        <DocsDescription>{page.data.description}</DocsDescription>
         <div className="flex flex-row gap-2 items-center border-b pb-6">
           <YaakButton />
         </div>
