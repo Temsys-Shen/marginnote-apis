@@ -1,10 +1,9 @@
-import { getPageMarkdownUrl, source } from '@/lib/source';
+import { source } from '@/lib/source';
 import {
   DocsBody,
   DocsDescription,
   DocsPage,
   DocsTitle,
-  MarkdownCopyButton,
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
@@ -18,8 +17,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const markdownUrl = getPageMarkdownUrl(page).url;
-
   // fumadocs-openapi 虚拟页面：交互式 API 参考。Playground 已关闭，调试走 Yaak
   if (page.type === 'openapi') {
     return (
@@ -27,7 +24,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         <DocsTitle>{page.data.title}</DocsTitle>
         <DocsDescription>{page.data.description}</DocsDescription>
         <div className="flex flex-row gap-2 items-center border-b pb-6">
-          <MarkdownCopyButton markdownUrl={markdownUrl} />
           <YaakButton />
         </div>
         <DocsBody>
@@ -43,9 +39,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">{page.data.description}</DocsDescription>
-      <div className="flex flex-row gap-2 items-center border-b pb-6">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
-      </div>
       <DocsBody>
         <MDX
           components={getMDXComponents({

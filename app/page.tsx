@@ -14,7 +14,6 @@ export default function HomePage() {
           <Card title="连接与鉴权" href="/docs/guide/auth-discovery" />
           <Card title="标准工作流" href="/docs/guide/workflows" />
           <Card title="交互式 API 参考" href="/docs/api" />
-          <Card title="运行时能力" href="/docs/contract/capabilities" />
         </Cards>
       </div>
       <p className="text-fd-muted-foreground mt-8 text-sm">

@@ -9,15 +9,15 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
 # 连接与鉴权
 
-<Tabs items={['同机', '跨设备']}>
-  <Tab value="同机">
-    Bridge 只监听 `127.0.0.1`。
+<Tabs items={['MacOS', 'IOS/IPadOS']}>
+  <Tab value="MacOS">
+    Marginnote CLI在MacOS上会监听127.0.0.1端口，这意味着除非经过本机转发，否则无法跨设备访问。
 
-    - MarginNote 设置 → Lab →「MarginNote CLI」已开启
+    - MarginNote 设置 → Lab → 开启「MarginNote CLI」
     - 令牌来源：`~/.config/mn-bridge/token` 文件、直接提供、环境变量 `MN_BRIDGE_TOKEN`
     - 未安装时：设置 → Lab →「Copy Agent Setup Command」，粘进终端执行
   </Tab>
-  <Tab value="跨设备">
+  <Tab value="IOS/IPadOS">
     走局域网，需配对：
 
     ```bash

@@ -2,8 +2,8 @@
   "title": "文档",
   "pages": [
     "index",
-    "guide",
-    "contract",
+    "---指南---",
+    "...guide",
     "---状态---",
     "...status",
     "---配置---",

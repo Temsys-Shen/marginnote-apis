@@ -13,14 +13,13 @@ MarginNote 本地 Bridge 的 HTTP 接口文档站，Bridge API v0.39-draft。
 ├── app/                   # Next.js 路由
 │   ├── page.tsx           # 落地页
 │   ├── docs/[[...slug]]/  # 文档页，手写 MDX 与 OpenAPI 虚拟页分支渲染
-│   ├── api/search/        # 站内搜索，构建时导出静态索引
-│   └── llms.txt | llms-full.txt | llms.mdx/  # LLM 输出
+│   └── api/search/        # 站内搜索，构建时导出静态索引
 ├── components/
 │   ├── api-page.tsx       # createOpenAPIPage，Schema 与示例，Playground 已关闭
 │   ├── yaak-button.tsx    # Yaak 一键导入按钮，全站复用同一组件
 │   ├── search-dialog.tsx  # 静态搜索对话框，staticClient
 │   └── mdx.tsx
-├── content/docs/          # 手写文档，指南与规范，加 meta.json 侧边栏
+├── content/docs/          # 手写文档，指南，加 meta.json 侧边栏
 ├── lib/
 │   ├── openapi.ts         # createOpenAPI，构建期直读解析 openapi.yaml，函数式 input
 │   └── source.ts          # loader，手写源加 staticSource groupBy tag
@@ -70,14 +69,12 @@ curl -s http://127.0.0.1:42340/bridge/v1/capabilities -H "Authorization: Bearer 
 
 - fumadocs-openapi：`createOpenAPI` 加 `staticSource({ groupBy: 'tag' })` 虚拟页面，`createOpenAPIPage` 渲染参数与响应 Schema 加多语言代码示例，Playground 已关闭，侧边栏方法徽标走 loader plugin，样式 `fumadocs-openapi/css/preset.css`
 - 搜索：构建时静态导出索引加客户端 `staticClient`，全文加面包屑加高亮，纯静态运行
-- LLM 输出：`/llms.txt` 索引，`/llms-full.txt` 全量，每页 `MarkdownCopyButton` 加 `/llms.mdx/...` 原文，含 OpenAPI 页降级文本
 - MDX 组件：Cards 加 Card，Tabs 加 Tab，Steps 加 Step，Callout，Accordion
-- Yaak 导入：`components/yaak-button.tsx` 单一来源，官方 `yaak.app/button/run` 格式，落地页、文档索引、规范页、全部 API 页复用同一组件
+- Yaak 导入：`components/yaak-button.tsx` 单一来源，官方 `yaak.app/button/run` 格式，落地页、文档索引、全部 API 页复用同一组件
 
 ## 阅读顺序
 
 1. `/docs`，指南：连接鉴权，标准工作流，错误处理
 2. 侧边栏「交互式 API」，Schema 加多语言示例加 Yaak 导入
-3. 规范：capabilities，OpenAPI 说明，版本与来源
 
 运行时 `/capabilities` 与本站不一致时，以运行时为准。
